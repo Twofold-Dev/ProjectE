@@ -170,8 +170,11 @@ public sealed class WaveManager : Component
 	{
 		var spawnPos = new Vector3( Random.Shared.Float( -SpawnXRange, SpawnXRange ), SpawnY, 0 );
 
-		// Create inactive so OnStart/OnFixedUpdate don't fire before position is set
-		var enemyGo = new GameObject( false, $"Enemy_{CurrentWave}_{_enemiesSpawnedThisWave}" );
+		var enemyGo = new GameObject( true, $"Enemy_{CurrentWave}_{_enemiesSpawnedThisWave}" );
+
+		// Set position BEFORE any components are created, so the initial
+		// network snapshot from NetworkSpawn captures the correct position
+		enemyGo.WorldPosition = spawnPos;
 
 		Enemy enemy;
 
@@ -217,9 +220,8 @@ public sealed class WaveManager : Component
 		body.MotionEnabled = false;
 		body.CollisionEventsEnabled = false;
 
-		// NetworkSpawn first, then set position to avoid origin reset
+		// NetworkSpawn captures the current state (including position) for replication
 		enemyGo.NetworkSpawn( null );
-		enemyGo.WorldPosition = spawnPos;
 
 		// Track when enemy dies to decrement EnemiesRemaining
 		enemy.OnEnemyDied += OnEnemyKilled;
