@@ -17,11 +17,6 @@ public sealed class GameManager : Component
 	[Sync] public int CurrentWave { get; set; } = 0;
 	[Sync] public int TotalScore { get; set; } = 0;
 
-	/// <summary>
-	/// List of connected player IDs, in order.
-	/// </summary>
-	public List<Guid> ConnectedPlayers { get; set; } = new();
-
 	protected override void OnStart()
 	{
 		if ( Networking.IsHost )
@@ -90,9 +85,6 @@ public sealed class GameManager : Component
 		}
 	}
 
-	/// <summary>
-	/// Called when all players have selected their upgrades.
-	/// </summary>
 	public void OnAllPlayersReady()
 	{
 		if ( !Networking.IsHost ) return;

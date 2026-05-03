@@ -23,30 +23,9 @@ public class Enemy : Component
 	/// </summary>
 	public Guid KilledBy { get; private set; }
 
-	private Sandbox.UI.Label _hpLabel;
-
 	protected override void OnStart()
 	{
 		CurrentHealth = BaseHealth;
-
-		// Create world HP label above the enemy
-		var hpWorld = Components.Create<WorldPanel>();
-		if ( hpWorld.IsValid() )
-		{
-			hpWorld.PanelSize = new Vector2( 200, 80 );
-			hpWorld.LookAtCamera = true;
-			hpWorld.Transform.LocalPosition = new Vector3( 0, 0, 60 );
-
-			var root = hpWorld.GetPanel();
-			if ( root.IsValid() )
-			{
-				_hpLabel = root.AddChild<Sandbox.UI.Label>();
-				_hpLabel.Text = $"{CurrentHealth:F0}";
-				_hpLabel.Style.FontSize = 40;
-				_hpLabel.Style.FontColor = Color.White;
-				_hpLabel.Style.FontWeight = 900;
-			}
-		}
 	}
 
 	protected override void OnFixedUpdate()
@@ -54,18 +33,27 @@ public class Enemy : Component
 		if ( !IsAlive ) return;
 		if ( !Networking.IsHost ) return;
 
-		// Move forward (+Y) toward the player's position at Y=0
-		WorldPosition += Vector3.Forward * Speed * Time.Delta;
-
-		// Check if enemy has reached Y=0 (player's position)
-		if ( WorldPosition.y >= 0 )
+		// Check if player has walked past this enemy
+		foreach ( var player in Scene.GetAllComponents<ArrowPlayer>() )
 		{
-			DamageNearestPlayer();
+			if ( player.IsDead ) continue;
+			// Player is behind this enemy (player Y < enemy Y since walking -Y)
+			if ( player.WorldPosition.y < WorldPosition.y )
+			{
+				var dist = Math.Abs( player.WorldPosition.y - WorldPosition.y );
+				if ( dist < 50f )
+				{
+					player.TakeDamage( Damage, Guid.Empty );
+					IsAlive = false;
+					OnDeath();
+					return;
+				}
+			}
 		}
 	}
 
 	/// <summary>
-	/// Apply damage to this enemy. Server-only.
+	/// Apply damage to this enemy.
 	/// </summary>
 	[Rpc.Broadcast]
 	public void TakeDamage( float damage, Guid attackerId )
@@ -73,12 +61,6 @@ public class Enemy : Component
 		if ( !IsAlive ) return;
 
 		CurrentHealth -= damage;
-
-		// Update HP label
-		if ( _hpLabel.IsValid() )
-		{
-			_hpLabel.Text = $"{CurrentHealth:F0}";
-		}
 
 		if ( CurrentHealth <= 0 )
 		{
@@ -88,27 +70,6 @@ public class Enemy : Component
 
 			OnDeath();
 		}
-	}
-
-	private void DamageNearestPlayer()
-	{
-		if ( !IsAlive ) return;
-
-		// Find the player closest to this enemy's position
-		var players = Scene.GetAllComponents<ArrowPlayer>()
-			.Where( p => !p.IsDead )
-			.OrderBy( p => Math.Abs( p.WorldPosition.y - WorldPosition.y ) )
-			.ToList();
-
-		if ( players.Count == 0 ) return;
-
-		var target = players.First();
-		Log.Info( $"Enemy reached player {target.GameObject.Name}, dealing {Damage} damage" );
-		target.TakeDamage( Damage, Guid.Empty );
-
-		// Enemy is consumed on contact
-		IsAlive = false;
-		OnDeath();
 	}
 
 	protected virtual void OnDeath()

@@ -19,13 +19,23 @@ public sealed class WaveManager : Component
 	public float SpawnInterval { get; set; } = 0.8f;
 
 	[Property, Category( "Waves" )]
-	public float SpawnY { get; set; } = -500f; // spawn at far end of lane
+	public float SpawnY { get; set; } = -500f;
 
 	[Property, Category( "Waves" )]
 	public float SpawnXRange { get; set; } = 200f; // random X offset within lane (-200 to 200)
 
 	[Property, Category( "Waves" )]
-	public int SubBossInterval { get; set; } = 5; // sub-boss every N waves
+	public int SubBossInterval { get; set; } = 5;
+
+	[Property, Category( "Gates" )]
+	public float GateSpawnInterval { get; set; } = 8f;
+
+	[Property, Category( "Spawning" )]
+	public float SpawnDistance { get; set; } = 800f;
+
+	[Property, Category( "Spawning" )]
+	public float CleanupDistance { get; set; } = 300f;
+
 
 	[Property, Category( "Waves" )]
 	public int FinalBossWave { get; set; } = 20;
@@ -78,9 +88,8 @@ public sealed class WaveManager : Component
 	private int _enemiesSpawnedThisWave = 0;
 	private int _targetEnemyCount = 0;
 	private TimeSince _timeSinceLastSpawn = 0;
-	private TimeSince _timeSinceWaveEnd = 0;
+	private TimeSince _timeSinceLastGateSpawn = 0;
 	private GameManager _gm;
-	private GameManager.GameState _lastState = GameManager.GameState.Lobby;
 
 	#endregion
 
@@ -106,7 +115,6 @@ public sealed class WaveManager : Component
 				break;
 
 			case GameManager.GameState.UpgradeSelect:
-				HandleUpgradeState();
 				break;
 
 			case GameManager.GameState.GameOver:
@@ -115,8 +123,17 @@ public sealed class WaveManager : Component
 		}
 	}
 
+	private float GetPlayerY()
+	{
+		foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
+			return p.WorldPosition.y;
+		return 0;
+	}
+
 	private void HandlePlayingState()
 	{
+		CleanupBehindPlayer();
+
 		if ( !WaveActive )
 		{
 			// Start a new wave
@@ -124,8 +141,15 @@ public sealed class WaveManager : Component
 		}
 		else
 		{
-			// Spawn enemies at interval
-			if ( _enemiesSpawnedThisWave < _targetEnemyCount )
+			// Spawn upgrade gates periodically during the wave
+					if ( _timeSinceLastGateSpawn >= GateSpawnInterval )
+					{
+						_timeSinceLastGateSpawn = 0;
+						SpawnUpgradeGate();
+					}
+		
+					// Spawn enemies at interval
+					if ( _enemiesSpawnedThisWave < _targetEnemyCount )
 			{
 				if ( _timeSinceLastSpawn >= SpawnInterval )
 				{
@@ -143,11 +167,6 @@ public sealed class WaveManager : Component
 		}
 	}
 
-	private void HandleUpgradeState()
-	{
-		// Wave was completed, waiting for players to pick upgrades
-		// GameManager handles transition back to Playing
-	}
 
 	private void StartNextWave()
 	{
@@ -168,13 +187,12 @@ public sealed class WaveManager : Component
 
 	private void SpawnEnemy()
 	{
-		var spawnPos = new Vector3( Random.Shared.Float( -SpawnXRange, SpawnXRange ), SpawnY, 0 );
+		var spawnY = GetPlayerY() - SpawnDistance;
+		var spawnPos = new Vector3( Random.Shared.Float( -SpawnXRange, SpawnXRange ), spawnY, 0 );
 
 		var enemyGo = new GameObject( true, $"Enemy_{CurrentWave}_{_enemiesSpawnedThisWave}" );
-
-		// Set position BEFORE any components are created, so the initial
-		// network snapshot from NetworkSpawn captures the correct position
 		enemyGo.WorldPosition = spawnPos;
+		enemyGo.WorldRotation = Rotation.FromYaw( 90f );
 
 		Enemy enemy;
 
@@ -220,7 +238,18 @@ public sealed class WaveManager : Component
 		body.MotionEnabled = false;
 		body.CollisionEventsEnabled = false;
 
-		// NetworkSpawn captures the current state (including position) for replication
+		// World-space HP label at enemy position
+		var hpGo = new GameObject( true, "HP_Label" );
+		hpGo.Parent = enemyGo;
+		hpGo.LocalPosition = Vector3.Zero;
+		hpGo.LocalScale = new Vector3( 5, 5, 5 );
+		var hpWorldPanel = hpGo.Components.Create<WorldPanel>();
+		hpWorldPanel.PanelSize = new Vector2( 800, 200 );
+		hpWorldPanel.LookAtCamera = true;
+		hpWorldPanel.RenderOptions.AfterUI = true;
+		var hpLabel = hpGo.Components.Create<Sandbox.UI.EnemyHpPanel>();
+		hpLabel.Enemy = enemy;
+
 		enemyGo.NetworkSpawn( null );
 
 		// Track when enemy dies to decrement EnemiesRemaining
@@ -298,6 +327,49 @@ public sealed class WaveManager : Component
 		return Vector3.One; // BasicEnemy
 	}
 
+	private void SpawnUpgradeGate()
+	{
+		// 4 fixed X positions for gates
+		float[] xPositions = { 150f, 50f, -50f, -150f };
+
+		for ( int i = 0; i < xPositions.Length; i++ )
+		{
+			var type = i % 2 == 0 ? UpgradeType.ArrowDamage : UpgradeType.ArrowFrequency;
+
+			var gateGo = new GameObject( true, $"Gate_{type}_{i}" );
+			var spawnY = GetPlayerY() - SpawnDistance;
+			gateGo.WorldPosition = new Vector3( xPositions[i], spawnY, 0 );
+			gateGo.WorldRotation = Rotation.From( 0, 0, -90 ); // perpendicular to floor
+			gateGo.LocalScale = Vector3.One;
+
+			var gate = gateGo.Components.Create<UpgradeGate>();
+			gate.UpgradeType = type;
+
+			var model = gateGo.Components.Create<ModelRenderer>();
+			model.Model = Model.Plane;
+			model.Tint = type == UpgradeType.ArrowDamage
+				? new Color( 1f, 0.3f, 0.3f, 0.4f )
+				: new Color( 0.3f, 0.7f, 1f, 0.4f );
+
+			var col = gateGo.Components.Create<BoxCollider>();
+			col.IsTrigger = true;
+
+			// Label centered on gate
+			var labelGo = new GameObject( true, "GateLabel" );
+			labelGo.Parent = gateGo;
+			labelGo.LocalPosition = Vector3.Zero;
+			labelGo.LocalScale = new Vector3( 3f, 3f, 3f );
+			var wp = labelGo.Components.Create<WorldPanel>();
+			wp.PanelSize = new Vector2( 800, 400 );
+			wp.LookAtCamera = true;
+			wp.RenderOptions.AfterUI = true;
+			var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
+			label.Text = type == UpgradeType.ArrowDamage ? "DAMAGE" : "FIRE\nRATE";
+
+			gateGo.NetworkSpawn( null );
+		}
+	}
+
 	private void OnEnemyKilled( Enemy enemy, Guid killerId )
 	{
 		EnemiesRemaining--;
@@ -309,6 +381,25 @@ public sealed class WaveManager : Component
 		}
 
 		Log.Info( $"Enemy killed by {killerId}. {EnemiesRemaining} remaining." );
+	}
+
+	private void CleanupBehindPlayer()
+	{
+		if ( !Networking.IsHost ) return;
+		var playerY = GetPlayerY();
+		var cleanupY = playerY + CleanupDistance;
+
+		foreach ( var enemy in Scene.GetAllComponents<Enemy>() )
+		{
+			if ( enemy.IsValid() && enemy.WorldPosition.y > cleanupY )
+				enemy.GameObject.Destroy();
+		}
+
+		foreach ( var gate in Scene.GetAllComponents<UpgradeGate>() )
+		{
+			if ( gate.IsValid() && gate.WorldPosition.y > cleanupY )
+				gate.GameObject.Destroy();
+		}
 	}
 
 	private void WaveComplete()

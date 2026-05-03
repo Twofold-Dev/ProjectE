@@ -16,6 +16,9 @@ public sealed class ArrowPlayer : Component
 	[Property, Category( "Movement" )]
 	public float LaneMaxX { get; set; } = 200f;
 
+	[Property, Category( "Movement" )]
+	public float ForwardSpeed { get; set; } = 200f;
+
 	[Property, Category( "Combat" )]
 	public float BaseFireRate { get; set; } = 1.0f; // arrows per second
 
@@ -91,8 +94,8 @@ public sealed class ArrowPlayer : Component
 		// We use .y: W(forward=+1) → right(+X), S(backward=-1) → left(-X)
 		var moveInput = Input.AnalogMove;
 
-		// Remap W/S to X-axis lane movement
-		_pc.WishVelocity = new Vector3( moveInput.y, 0, 0 ) * MoveSpeed;
+		// A/D lane movement + auto-walk forward
+		_pc.WishVelocity = new Vector3( moveInput.y * MoveSpeed, -ForwardSpeed, 0 );
 
 		// Handle jump prevention (JumpSpeed=0 on PlayerController already handles this,
 		// but double-check)
@@ -107,8 +110,7 @@ public sealed class ArrowPlayer : Component
 		if ( IsProxy ) return; // only the owning client fires arrows
 		if ( IsDead ) return;
 
-		// --- Lane clamping ---
-		// After physics runs, clamp world position to lane bounds
+		// --- Lane clamping (X only, Y is free for forward walk) ---
 		var pos = WorldPosition;
 		pos.x = pos.x.Clamp( LaneMinX, LaneMaxX );
 		WorldPosition = pos;
@@ -219,9 +221,8 @@ public sealed class ArrowPlayer : Component
 
 	private Color GetPlayerColor()
 	{
-		// Simple: owner 0 = blue, owner 1 = red
-		var index = Network.OwnerId == Scene.GetAllComponents<GameManager>().FirstOrDefault()?.ConnectedPlayers?.FirstOrDefault()
-			? 0 : 1;
+		var players = Scene.GetAllComponents<ArrowPlayer>().ToList();
+		var index = players.IndexOf( this );
 		return index == 1 ? Color.Red : Color.Blue;
 	}
 

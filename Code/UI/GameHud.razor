@@ -12,6 +12,19 @@
             <div class="wave-display">Wave @Wave</div>
             <div class="score-display">Score: @Score</div>
         </div>
+        <div class="stats-container">
+            @foreach ( var entry in AllPlayerStats )
+            {
+                <div class="stats-panel @entry.Side">
+                    <div class="stats-title">@entry.Name</div>
+                    <div class="stat-row">Fire Rate: @entry.FireRate</div>
+                    <div class="stat-row">Damage: @entry.Damage</div>
+                    <div class="stat-row">Speed: @entry.Speed</div>
+                    <div class="stat-row">Range: @entry.Range</div>
+                    <div class="stat-row">Move: @entry.MoveSpeed</div>
+                </div>
+            }
+        </div>
     </div>
 </root>
 
@@ -24,11 +37,16 @@
     .health-bar-wrap { width: 200px; height: 24px; background: #00000080; border: 2px solid #666; border-radius: 4px; position: relative; }
     .health-bar-fill { height: 100%; background: linear-gradient(90deg, #44cc44, #88ff88); border-radius: 2px; transition: width 0.3s ease; }
     .health-label { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: bold; }
+    .stats-container { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; flex-direction: row; justify-content: space-between; padding: 0 20px; }
+    .stats-panel { background: #00000080; border-radius: 8px; padding: 8px 16px; display: flex; flex-direction: column; gap: 2px; }
+    .stats-title { font-size: 14px; color: #88ddff; font-weight: bold; margin-bottom: 4px; }
+    .stat-row { font-size: 16px; color: #ccddee; font-weight: bold; text-shadow: 1px 1px 2px #000000cc; white-space: nowrap; }
 </style>
 
 @code {
     private GameManager _gm;
     private ArrowPlayer _player;
+    private List<PlayerStatEntry> AllPlayerStats = new();
 
     public int Score => _gm?.TotalScore ?? 0;
     public int Wave => _gm?.CurrentWave ?? 0;
@@ -42,6 +60,28 @@
             _gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
         if ( _player == null )
             _player = GetLocalPlayer();
+
+        RefreshStats();
+    }
+
+    private void RefreshStats()
+    {
+        AllPlayerStats.Clear();
+        int idx = 0;
+        foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
+        {
+            AllPlayerStats.Add( new PlayerStatEntry
+            {
+                Name = $"Player {idx + 1}",
+                Side = idx == 0 ? "left" : "right",
+                FireRate = $"{p.BaseFireRate + p.GetFireRateBonus():F1}/s",
+                Damage = $"{(int)(p.ArrowDamage + p.GetDamageBonus())}",
+                Speed = $"{(int)(p.ArrowSpeed + p.GetSpeedBonus())}",
+                Range = $"{(int)(p.ArrowDistance + p.GetDistanceBonus())}",
+                MoveSpeed = $"{(int)(p.MoveSpeed + p.GetMoveSpeedBonus())}",
+            } );
+            idx++;
+        }
     }
 
     private ArrowPlayer GetLocalPlayer()
@@ -54,5 +94,16 @@
     protected override int BuildHash()
     {
         return System.HashCode.Combine( Score, Wave, HealthCurrent, HealthMax );
+    }
+
+    public class PlayerStatEntry
+    {
+        public string Name { get; set; }
+        public string Side { get; set; }
+        public string FireRate { get; set; }
+        public string Damage { get; set; }
+        public string Speed { get; set; }
+        public string Range { get; set; }
+        public string MoveSpeed { get; set; }
     }
 }

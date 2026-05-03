@@ -15,7 +15,7 @@ public sealed class UpgradeManager : Component
 	/// <summary>
 	/// The last upgrade this player selected (empty if none).
 	/// </summary>
-	public UpgradeType? LastSelected { get; private set; } = null;
+	public UpgradeType? LastSelected { get; set; } = null;
 
 	/// <summary>
 	/// Whether this player has made their selection this round.
