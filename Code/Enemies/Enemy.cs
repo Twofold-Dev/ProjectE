@@ -54,8 +54,8 @@ public class Enemy : Component
 		if ( !IsAlive ) return;
 		if ( !Networking.IsHost ) return;
 
-		// Move leftward (-X) toward players
-		WorldPosition += Vector3.Left * Speed * Time.Delta;
+		// Move forward (+Y) toward the player's position at Y=0
+		WorldPosition += Vector3.Forward * Speed * Time.Delta;
 
 		// Check if enemy has reached Y=0 (player's position)
 		if ( WorldPosition.y >= 0 )

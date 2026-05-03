@@ -104,7 +104,7 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": null,
+          "MaterialOverride": "materials/narrow wooden plank flooring/wooden plank floor.vmat",
           "Materials": null,
           "Model": "models/dev/plane.vmdl",
           "OnComponentDestroy": null,
@@ -700,7 +700,7 @@
           "OnComponentUpdate": null,
           "SpawnInterval": 0.8,
           "SpawnXRange": 150,
-          "SpawnY": -2000,
+          "SpawnY": -800,
           "SpeedScale": 1.03,
           "SubBossInterval": 5,
           "TankMaterial": null,
@@ -808,7 +808,7 @@
       "Flags": 0,
       "Name": "Object (1)",
       "Position": "-267.301147,-754.311584,230.541733",
-      "Rotation": "0,0,0,1",
+      "Rotation": "0,-0.999999642,0,4.61935997E-07",
       "Scale": "0.323739469,48.3491974,12.3462753",
       "Tags": "",
       "Enabled": true,
@@ -1167,6 +1167,11 @@
         "Data": {
           "SelectionSets": []
         }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "717b7f88-47d6-49cd-992f-fdbefb7139be"
+        }
       }
     }
   },
@@ -1174,6 +1179,7 @@
   "Title": null,
   "Description": null,
   "__references": [
+    "danivisit.woodenplankfloor#162712",
     "facepunch.office_chair#144847",
     "facepunch.office_screen_01#143469",
     "halfpeeps.office_blinds#24530",
