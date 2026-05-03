@@ -22,9 +22,9 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | **Multiplayer** | 2-player co-op, expandable | Players fight same waves together; architecture supports N players |
-| **Player Controller** | S&Box default built-in | Player pawn already handles movement, networking, camera. We add `ArrowPlayer` component to constrain & auto-fire |
+| **Player Controller** | S&Box built-in `PlayerController` + `ArrowPlayer` component attached alongside | Built-in handles physics (Rigidbody+CapsuleCollider), networking ([Sync] WishVelocity/EyeAngles), third-person camera. We configure properties (disable jump/duck/look) and ArrowPlayer overrides input to constrain to X-axis lane movement. See [PlayerController Configuration](#playercontroller-configuration-reference) below. |
 | **Art Style** | Placeholder primitives (cubes/spheres) | Gameplay first; swap models later |
-| **Camera** | Third-person behind-character | Matches original game feel |
+| **Camera** | Third-person side-scroller (fixed angle) | `CameraOffset (0, -350, 150)` views lane from side; `UseLookControls = false` locks camera (no mouse orbit); `PitchClamp = 0` |
 | **Scope** | Core infinite-run loop first, meta-progression second | Playable ASAP |
 
 ---
@@ -98,15 +98,45 @@ flowchart TD
 
 ### 1.1 — Scene & Camera Setup
 - **File**: `Assets/scenes/arrow_game.scene` (new)
-- Configure [`CameraComponent`](F:/Game%20Development/LLM/api_scene_ui.txt:62) for third-person behind-character view
+- Configure [`CameraComponent`](F:/Game%20Development/LLM/api_scene_ui.txt:62) for third-person side-scroller view (fixed angle, no mouse orbit)
 - Add ground plane, lighting, lane boundary markers
 - Place `GameManager` GameObject with component (server-only logic)
 - Player spawn points for 2 players
+- **PlayerController properties configured in scene/prefab** (see [Configuration Reference](#playercontroller-configuration-reference)):
+  - `CameraOffset = (0, -350, 150)` — camera to the left, viewing the lane from the side
+  - `ThirdPerson = true` — third-person mode
+  - `UseLookControls = false` — no mouse orbit (fixed camera for 2D lane)
+  - `PitchClamp = 0` — no vertical look
+  - `JumpSpeed = 0` — disable jumping
+  - `DuckedHeight = 72` — match BodyHeight, prevent ducking
+  - `UseInputControls = false` — ArrowPlayer handles input (see 1.2)
+  - `RunSpeed = 300` — base movement speed matches plan
+  - `EnablePressing = false` — no interaction system needed
+  - `AccelerationTime = 0.05f` / `DeaccelerationTime = 0.1f` — snappy lane movement
 
 ### 1.2 — ArrowPlayer Component (attached to default player)
 - **File**: `Code/Player/ArrowPlayer.cs` (new)
 - **Does NOT replace** the default player controller — attaches as a component alongside it
-- **Lane constraint**: Override/restrict movement to X-axis only (left/right). The default player already reads WASD; we clamp position.
+- **Input handling**: Since `UseInputControls = false` on the PlayerController, ArrowPlayer handles movement in `OnFixedUpdate()`:
+  ```csharp
+  protected override void OnFixedUpdate()
+  {
+      if (IsProxy) return;
+      var pc = GameObject.GetComponent<PlayerController>();
+      if (!pc.IsValid()) return;
+      
+      // Read only horizontal input (A/D or left stick X)
+      var move = Input.AnalogMove;
+      pc.WishVelocity = new Vector3(move.x, 0, 0) * MoveSpeed;
+  }
+  ```
+  This ensures the PlayerController's physics (Rigidbody, collision, step-up) still run, but only X-axis movement is applied.
+- **Lane constraint**: In `OnUpdate()`, clamp `WorldPosition.x` between `LaneMinX` and `LaneMaxX` after physics:
+  ```csharp
+  var pos = WorldPosition;
+  pos.x = pos.x.Clamp(LaneMinX, LaneMaxX);
+  WorldPosition = pos;
+  ```
 - **Auto-fire**: In [`OnUpdate()`](f:/game%20development/projecte/Code/MyComponent.cs:6), spawn arrows at `FireRate` interval
 - **Health**: Synced via `[Sync]` property. On death → game over for that player.
 - **Upgrade state**: Per-player dictionary of upgrade levels, synced
@@ -115,6 +145,33 @@ flowchart TD
   - `BaseFireRate` (1.0/s)
   - `MaxHealth` (100)
   - `LaneMinX`, `LaneMaxX` (movement bounds)
+
+---
+
+### PlayerController Configuration Reference
+
+These properties are set on the `PlayerController` component in the player prefab/scene. All are `[Property]`-exposed and configurable in the editor.
+
+| Property | Value | Source File | Reason |
+|----------|-------|-------------|--------|
+| `UseInputControls` | **`false`** | [`PlayerController.Input.cs:6`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:6) | ArrowPlayer sets `WishVelocity` directly in `OnFixedUpdate()` — only X-axis |
+| `UseLookControls` | **`false`** | [`PlayerController.Input.cs:54`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:54) | Fixed camera for 2D lane game — no mouse orbit |
+| `UseCameraControls` | `true` | [`PlayerController.Camera.cs:6`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Camera.cs:6) | Keep built-in third-person camera positioning |
+| `ThirdPerson` | `true` | [`PlayerController.Camera.cs:9`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Camera.cs:9) | Side-scroller perspective |
+| `CameraOffset` | **`(0, -350, 150)`** | [`PlayerController.Camera.cs:12`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Camera.cs:12) | Camera to left, viewing lane from side. X=0 (no behind offset), Y=-350 (left), Z=150 (above) |
+| `PitchClamp` | **`0`** | [`PlayerController.Input.cs:56`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:56) | No vertical look allowed |
+| `JumpSpeed` | **`0`** | [`PlayerController.Input.cs:11`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:11) | Disables jumping (`if JumpSpeed <= 0 return` guard at line 96) |
+| `RunSpeed` | **`300`** | [`PlayerController.Input.cs:9`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:9) | Base move speed (matches plan's `MoveSpeed`) |
+| `WalkSpeed` | `300` | [`PlayerController.Input.cs:8`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:8) | Same as run — no walk/run distinction |
+| `DuckedHeight` | **`72`** | [`PlayerController.Input.cs:12`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:12) | Same as `BodyHeight` — prevents ducking |
+| `BodyHeight` | `72` | [`PlayerController.cs:30`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.cs:30) | Default capsule height (unchanged) |
+| `BodyRadius` | `16` | [`PlayerController.cs:29`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.cs:29) | Default collision radius (unchanged) |
+| `EnablePressing` | **`false`** | [`PlayerController.Input.cs:38`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:38) | No "use" interaction in auto-shooter |
+| `AccelerationTime` | **`0.05f`** | [`PlayerController.Input.cs:17`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:17) | Snappy lane response |
+| `DeaccelerationTime` | **`0.1f`** | [`PlayerController.Input.cs:22`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:22) | Quick stop |
+| `RunByDefault` | `true` | [`PlayerController.Input.cs:32`](F:/Game%20Development/LLM/sboxengine/engine/Sandbox.Engine/Scene/Components/Game/PlayerController/PlayerController.Input.cs:32) | Always at full speed |
+
+> **Bold** values are overrides from default. Un-bolded are defaults we keep.
 
 ### 1.3 — Arrow Projectile
 - **File**: `Code/Projectiles/Arrow.cs` (new)
