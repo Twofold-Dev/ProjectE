@@ -5,49 +5,88 @@
 <root>
     @if ( IsVisible )
     {
-        <div class="upgrade-overlay">
-            <div class="upgrade-players">
-                @for ( int i = 0; i < AllManagers.Count; i++ )
-                {
-                    var um = AllManagers[i];
-                    var isOwner = um.Network.IsOwner;
-                    <div class="upgrade-player-side">
-                        <div class="upgrade-section-title">Choose your upgrade</div>
-                        <div class="upgrade-player-name @(isOwner ? "owner" : "")">
-                            Player @(i + 1) @(isOwner ? "(You)" : "")
-                        </div>
-                        @if ( !um.HasSelected )
-                        {
-                            <div class="upgrade-choices">
-                                @foreach ( var option in (um.CurrentOptions ?? new()) )
-                                {
-                                    <div class="upgrade-card @(isOwner ? "clickable" : "")"
-                                         @onclick="@(isOwner ? () => um.SelectUpgrade(option) : null)">
-                                        <div class="upgrade-name">@GetName(option)</div>
-                                        <div class="upgrade-level">Lv @GetLevel(um, option) → @(GetLevel(um, option) + 1)</div>
-                                        <div class="upgrade-desc">@GetDesc(option)</div>
-                                    </div>
-                                }
+        @if ( ShowPlaystyleSelect )
+        {
+            <div class="upgrade-overlay">
+                <div class="upgrade-title">Choose Your Weapon</div>
+                <div class="upgrade-players">
+                    @for ( int i = 0; i < AllManagers.Count; i++ )
+                    {
+                        var um = AllManagers[i];
+                        var isOwner = um.Network.IsOwner;
+                        var side = i == 0 ? "left" : "right";
+                        <div class="upgrade-player-side @side">
+                            <div class="upgrade-player-name @(isOwner ? "owner" : "")">
+                                Player @(i + 1) @(isOwner ? "(You)" : "")
                             </div>
-                            @if ( um.CurrentOptions.Count == 0 )
+                            @if ( !um.HasSelected )
                             {
-                                <div class="upgrade-status">All upgrades maxed!</div>
+                                <div class="upgrade-choices">
+                                    @foreach ( var ps in playstyles )
+                                    {
+                                        <div class="upgrade-card clickable"
+                                             @onclick="@(isOwner ? () => SelectPlaystyle(um, ps) : null)">
+                                            <div class="upgrade-name">@GetPlaystyleName(ps)</div>
+                                            <div class="upgrade-desc">@GetPlaystyleDesc(ps)</div>
+                                        </div>
+                                    }
+                                </div>
                             }
-                        }
-                        else
-                        {
-                            var selectedName = um.LastSelected.HasValue ? GetName(um.LastSelected.Value) : "Ready!";
-                            var selectedLevel = um.LastSelected.HasValue ? um.CurrentUpgrades?.GetLevel(um.LastSelected.Value) ?? 0 : 0;
-                            <div class="upgrade-chosen">
-                                <div class="upgrade-chosen-label">Chosen</div>
-                                <div class="upgrade-chosen-name">@selectedName</div>
-                                <div class="upgrade-chosen-level">Level @selectedLevel</div>
-                            </div>
-                        }
-                    </div>
-                }
+                            else
+                            {
+                                <div class="upgrade-chosen">
+                                    <div class="upgrade-chosen-name">@GetPlaystyleName(um.CurrentUpgrades.ChosenPlaystyle)</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="upgrade-overlay">
+                <div class="upgrade-title">Choose an Upgrade</div>
+                <div class="upgrade-players">
+                    @for ( int i = 0; i < AllManagers.Count; i++ )
+                    {
+                        var um = AllManagers[i];
+                        var isOwner = um.Network.IsOwner;
+                        var side = i == 0 ? "left" : "right";
+                        <div class="upgrade-player-side @side">
+                            <div class="upgrade-player-name @(isOwner ? "owner" : "")">
+                                Player @(i + 1) @(isOwner ? "(You)" : "")
+                            </div>
+                            @if ( !um.HasSelected )
+                            {
+                                <div class="upgrade-choices">
+                                    @foreach ( var option in (um.CurrentOptions ?? new()) )
+                                    {
+                                        <div class="upgrade-card @(isOwner ? "clickable" : "")"
+                                             @onclick="@(isOwner ? () => um.SelectUpgrade(option) : null)">
+                                            <div class="upgrade-name">@GetName(option)</div>
+                                            <div class="upgrade-level">Lv @GetLevel(um, option) → @(GetLevel(um, option) + 1)</div>
+                                            <div class="upgrade-desc">@GetDesc(option)</div>
+                                        </div>
+                                    }
+                                </div>
+                                @if ( um.CurrentOptions.Count == 0 )
+                                {
+                                    <div class="upgrade-status">All upgrades maxed!</div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="upgrade-chosen">
+                                    <div class="upgrade-chosen-label">Chosen</div>
+                                    <div class="upgrade-chosen-name">@GetName(um.LastSelected ?? UpgradeType.ArrowFrequency)</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     }
 </root>
 
@@ -152,6 +191,9 @@
     private GameManager _gm;
     private List<UpgradeManager> AllManagers = new();
     public bool IsVisible { get; set; } = false;
+    public bool ShowPlaystyleSelect => _gm != null && !_gm.PlaystyleChosen;
+
+    private List<Playstyle> playstyles = new() { Playstyle.RapidFire, Playstyle.SplitShot, Playstyle.PowerShot };
 
     protected override void OnUpdate()
     {
@@ -168,12 +210,45 @@
         {
             foreach ( var um in Scene.GetAllComponents<UpgradeManager>() )
             {
-                if ( um.CurrentOptions.Count == 0 && !um.HasSelected )
+                if ( !ShowPlaystyleSelect && um.CurrentOptions.Count == 0 && !um.HasSelected )
                     um.OfferUpgrades();
                 AllManagers.Add( um );
             }
         }
     }
+
+    private void SelectPlaystyle( UpgradeManager um, Playstyle ps )
+    {
+        um.CurrentUpgrades.ChosenPlaystyle = ps;
+        um.CurrentUpgrades.PlaystyleLocked = true;
+        um.HasSelected = true;
+        _gm.PlaystyleChosen = true;
+
+        if ( Networking.IsHost )
+        {
+            bool allReady = true;
+            foreach ( var u in Scene.GetAllComponents<UpgradeManager>() )
+                if ( !u.HasSelected ) { allReady = false; break; }
+            if ( allReady )
+                _gm.OnAllPlayersReady();
+        }
+    }
+
+    private string GetPlaystyleName( Playstyle ps ) => ps switch
+    {
+        Playstyle.RapidFire => "Rapid Fire",
+        Playstyle.SplitShot => "Split Shot",
+        Playstyle.PowerShot => "Power Shot",
+        _ => ps.ToString(),
+    };
+
+    private string GetPlaystyleDesc( Playstyle ps ) => ps switch
+    {
+        Playstyle.RapidFire => "Spam paper planes!\n3 shots/sec\nLow damage each",
+        Playstyle.SplitShot => "Paper chain split!\n3 planes per shot\nScreen coverage",
+        Playstyle.PowerShot => "Heavy stapler shot!\n1 shot every 2s\nMassive damage",
+        _ => "",
+    };
 
     private string GetName( UpgradeType t ) => t switch
     {
@@ -181,8 +256,8 @@
         UpgradeType.ArrowDamage => "Stapler Power",
         UpgradeType.ArrowSpeed => "Aerodynamics",
         UpgradeType.ArrowDistance => "Paper Stream",
-        UpgradeType.SwordCount => "Extra Shredders",
-        UpgradeType.SwordDamage => "Sharp Blades",
+        UpgradeType.SwordCount => "Paper Shredders",
+        UpgradeType.SwordDamage => "Fresh Blades",
         UpgradeType.PetCount => "Desk Buddies",
         UpgradeType.PetFireRate => "Busy Buddies",
         UpgradeType.MovementSpeed => "Office Chair",
@@ -192,16 +267,16 @@
 
     private string GetDesc( UpgradeType t ) => t switch
     {
-        UpgradeType.ArrowFrequency => "+0.3 shots/sec",
-        UpgradeType.ArrowDamage => "+5 damage per hit",
-        UpgradeType.ArrowSpeed => "+100 speed",
-        UpgradeType.ArrowDistance => "+200 range",
-        UpgradeType.SwordCount => "+1 orbiting shredder",
-        UpgradeType.SwordDamage => "+8 shredder damage",
-        UpgradeType.PetCount => "+1 desk buddy",
-        UpgradeType.PetFireRate => "+0.5 buddy attacks/sec",
-        UpgradeType.MovementSpeed => "+50 move speed",
-        UpgradeType.HealthBoost => "+20 HP, heal",
+        UpgradeType.ArrowFrequency => "More coffee = faster firing!\n+0.3 shots/sec",
+        UpgradeType.ArrowDamage => "Heavy-duty stapling!\n+5 damage per hit",
+        UpgradeType.ArrowSpeed => "Better paper plane folds!\n+100 speed",
+        UpgradeType.ArrowDistance => "Longer paper trail!\n+200 range",
+        UpgradeType.SwordCount => "Extra shredding blades!\n+1 orbiting shredder",
+        UpgradeType.SwordDamage => "Sharper shredder teeth!\n+8 shredder damage",
+        UpgradeType.PetCount => "More office friends!\n+1 desk buddy",
+        UpgradeType.PetFireRate => "Buddies work OT!\n+0.5 buddy attacks/sec",
+        UpgradeType.MovementSpeed => "Upgraded chair wheels!\n+50 move speed",
+        UpgradeType.HealthBoost => "Banked sick leave!\n+20 HP, heal",
         _ => "",
     };
 

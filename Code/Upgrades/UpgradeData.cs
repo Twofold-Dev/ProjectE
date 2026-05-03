@@ -1,3 +1,10 @@
+public enum Playstyle
+{
+	RapidFire,  // High fire rate, low damage
+	SplitShot,  // Medium rate, reduced damage, splits into multiple
+	PowerShot,  // Low fire rate, high damage
+}
+
 /// <summary>
 /// Types of upgrades available.
 /// </summary>
@@ -21,6 +28,9 @@ public enum UpgradeType
 /// </summary>
 public sealed class UpgradeState
 {
+	public Playstyle ChosenPlaystyle { get; set; } = Playstyle.RapidFire;
+	public bool PlaystyleLocked { get; set; } = false;
+
 	public int ArrowFrequency { get; set; } = 0;
 	public int ArrowDamage { get; set; } = 0;
 	public int ArrowSpeed { get; set; } = 0;

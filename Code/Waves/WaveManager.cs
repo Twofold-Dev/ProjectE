@@ -364,7 +364,7 @@ public sealed class WaveManager : Component
 			wp.LookAtCamera = true;
 			wp.RenderOptions.AfterUI = true;
 			var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
-			label.Text = type == UpgradeType.ArrowDamage ? "DAMAGE" : "FIRE\nRATE";
+			label.Text = type == UpgradeType.ArrowDamage ? "STAPLER\nPOWER" : "COFFEE\nRUSH";
 
 			gateGo.NetworkSpawn( null );
 		}

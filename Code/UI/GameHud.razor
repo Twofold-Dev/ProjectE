@@ -17,11 +17,12 @@
             {
                 <div class="stats-panel @entry.Side">
                     <div class="stats-title">@entry.Name</div>
-                    <div class="stat-row">Fire Rate: @entry.FireRate</div>
-                    <div class="stat-row">Damage: @entry.Damage</div>
-                    <div class="stat-row">Speed: @entry.Speed</div>
-                    <div class="stat-row">Range: @entry.Range</div>
-                    <div class="stat-row">Move: @entry.MoveSpeed</div>
+                    <div class="stat-row">☕ Coffee: @entry.FireRate</div>
+                    <div class="stat-row">🔧 Staple: @entry.Damage</div>
+                    <div class="stat-row">✈️ Aero: @entry.Speed</div>
+                    <div class="stat-row">📄 Stream: @entry.Range</div>
+                    <div class="stat-row">🔗 Split: @entry.SplitCount</div>
+                    <div class="stat-row">🪑 Chair: @entry.MoveSpeed</div>
                 </div>
             }
         </div>
@@ -62,6 +63,7 @@
             _player = GetLocalPlayer();
 
         RefreshStats();
+        StateHasChanged();
     }
 
     private void RefreshStats()
@@ -74,10 +76,11 @@
             {
                 Name = $"Player {idx + 1}",
                 Side = idx == 0 ? "left" : "right",
-                FireRate = $"{p.BaseFireRate + p.GetFireRateBonus():F1}/s",
-                Damage = $"{(int)(p.ArrowDamage + p.GetDamageBonus())}",
-                Speed = $"{(int)(p.ArrowSpeed + p.GetSpeedBonus())}",
-                Range = $"{(int)(p.ArrowDistance + p.GetDistanceBonus())}",
+                FireRate = $"{p.EffectiveFireRate:F1}/s",
+                Damage = $"{(int)p.EffectiveDamage}",
+                Speed = $"{(int)p.EffectiveSpeed}",
+                Range = $"{(int)p.EffectiveRange}",
+                SplitCount = $"{p.EffectiveSplitCount}",
                 MoveSpeed = $"{(int)(p.MoveSpeed + p.GetMoveSpeedBonus())}",
             } );
             idx++;
@@ -93,7 +96,22 @@
 
     protected override int BuildHash()
     {
-        return System.HashCode.Combine( Score, Wave, HealthCurrent, HealthMax );
+        // Derive hash from actual displayed values so any stat change triggers re-render
+        int hash = 17;
+        foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
+        {
+            hash = hash * 31 + p.EffectiveFireRate.GetHashCode();
+            hash = hash * 31 + p.EffectiveDamage.GetHashCode();
+            hash = hash * 31 + p.EffectiveSpeed.GetHashCode();
+            hash = hash * 31 + p.EffectiveRange.GetHashCode();
+            hash = hash * 31 + p.EffectiveSplitCount.GetHashCode();
+            hash = hash * 31 + (p.MoveSpeed + p.GetMoveSpeedBonus()).GetHashCode();
+            hash = hash * 31 + p.Health.GetHashCode();
+            hash = hash * 31 + p.MaxHealth.GetHashCode();
+        }
+        hash = hash * 31 + Score;
+        hash = hash * 31 + Wave;
+        return hash;
     }
 
     public class PlayerStatEntry
@@ -104,6 +122,7 @@
         public string Damage { get; set; }
         public string Speed { get; set; }
         public string Range { get; set; }
+        public string SplitCount { get; set; }
         public string MoveSpeed { get; set; }
     }
 }

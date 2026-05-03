@@ -82,6 +82,71 @@ public sealed class ArrowPlayer : Component
 		Health = MaxHealth;
 	}
 
+
+	private float PlaystyleBaseFireRate
+	{
+		get
+		{
+			if ( _um?.CurrentUpgrades == null || !_um.CurrentUpgrades.PlaystyleLocked )
+				return 1f;
+			return _um.CurrentUpgrades.ChosenPlaystyle switch
+			{
+				Playstyle.RapidFire => 3f,
+				Playstyle.SplitShot => 2f,
+				Playstyle.PowerShot => 0.5f,
+				_ => 1f,
+			};
+		}
+	}
+
+	private float PlaystyleArrowDamage
+	{
+		get
+		{
+			if ( _um?.CurrentUpgrades == null || !_um.CurrentUpgrades.PlaystyleLocked )
+				return 10f;
+			return _um.CurrentUpgrades.ChosenPlaystyle switch
+			{
+				Playstyle.RapidFire => 5f,
+				Playstyle.SplitShot => 8f,
+				Playstyle.PowerShot => 25f,
+				_ => 10f,
+			};
+		}
+	}
+
+	private float PlaystyleArrowSpeed
+	{
+		get
+		{
+			if ( _um?.CurrentUpgrades == null || !_um.CurrentUpgrades.PlaystyleLocked )
+				return 500f;
+			return _um.CurrentUpgrades.ChosenPlaystyle switch
+			{
+				Playstyle.RapidFire => 500f,
+				Playstyle.SplitShot => 400f,
+				Playstyle.PowerShot => 700f,
+				_ => 500f,
+			};
+		}
+	}
+
+	private float PlaystyleArrowDistance
+	{
+		get
+		{
+			if ( _um?.CurrentUpgrades == null || !_um.CurrentUpgrades.PlaystyleLocked )
+				return 800f;
+			return _um.CurrentUpgrades.ChosenPlaystyle switch
+			{
+				Playstyle.RapidFire => 600f,
+				Playstyle.SplitShot => 500f,
+				Playstyle.PowerShot => 1000f,
+				_ => 800f,
+			};
+		}
+	}
+
 	protected override void OnFixedUpdate()
 	{
 		if ( Scene.IsEditor ) return; // don't run gameplay logic in edit mode
@@ -116,7 +181,7 @@ public sealed class ArrowPlayer : Component
 		WorldPosition = pos;
 
 		// --- Auto-fire ---
-		var effectiveFireRate = BaseFireRate + GetFireRateBonus();
+		var effectiveFireRate = PlaystyleBaseFireRate + GetFireRateBonus();
 		var interval = 1.0f / effectiveFireRate;
 
 		if ( _timeSinceLastFire >= interval )
@@ -130,21 +195,33 @@ public sealed class ArrowPlayer : Component
 
 	private void FireArrow()
 	{
-		// Spawn arrow projectile
+		var count = GetSplitCount();
+		var baseAngle = -90f;
+		var spread = 6f;
+		var startAngle = count > 0 ? -(count * spread * 0.5f) : 0f;
+
+		for ( int i = 0; i <= count; i++ )
+		{
+			SpawnSingleArrow( baseAngle + startAngle + i * spread );
+		}
+	}
+
+	private void SpawnSingleArrow( float yaw )
+	{
 		var arrowGo = new GameObject( true, $"Arrow_{GameObject.Name}" );
-		arrowGo.WorldPosition = WorldPosition + Vector3.Right * 30f;
-		arrowGo.WorldRotation = Rotation.FromYaw( 90f );
+		arrowGo.WorldPosition = WorldPosition + Rotation.FromYaw( yaw ).Forward * 30f;
+		arrowGo.WorldRotation = Rotation.FromYaw( yaw );
 
 		var arrow = arrowGo.Components.Create<Arrow>();
-		arrow.Speed = ArrowSpeed + GetSpeedBonus();
-		arrow.Damage = ArrowDamage + GetDamageBonus();
-		arrow.MaxDistance = ArrowDistance + GetDistanceBonus();
+		arrow.Speed = PlaystyleArrowSpeed + GetSpeedBonus();
+		arrow.Damage = PlaystyleArrowDamage + GetDamageBonus();
+		arrow.MaxDistance = PlaystyleArrowDistance + GetDistanceBonus();
 		arrow.OwnerId = Network.OwnerId;
+		arrow.SplitCount = 0;
 
-		// Visual placeholder: stretched cube
 		var model = arrowGo.Components.Create<ModelRenderer>();
-		model.Model = Model.Cube; // default engine cube — replace later
-		arrowGo.LocalScale = new Vector3( 2f, 0.25f, 0.25f ); // arrow shape
+		model.Model = Model.Cube;
+		arrowGo.LocalScale = new Vector3( 2f, 0.25f, 0.25f );
 		model.Tint = GetPlayerColor();
 		arrowGo.NetworkSpawn( null );
 	}
@@ -185,16 +262,33 @@ public sealed class ArrowPlayer : Component
 
 	#region Upgrades
 
+	public int GetSplitCount()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 0;
+		if ( !_um.CurrentUpgrades.PlaystyleLocked ) return 0;
+		return _um.CurrentUpgrades.ChosenPlaystyle == Playstyle.SplitShot ? 2 + _um.CurrentUpgrades.ArrowDistance : 0;
+	}
+
+	public float EffectiveFireRate => PlaystyleBaseFireRate + GetFireRateBonus();
+	public float EffectiveDamage => PlaystyleArrowDamage + GetDamageBonus();
+	public float EffectiveSpeed => PlaystyleArrowSpeed + GetSpeedBonus();
+	public float EffectiveRange => PlaystyleArrowDistance + GetDistanceBonus();
+	public int EffectiveSplitCount => GetSplitCount() + 1;
+
 	public float GetFireRateBonus()
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
 		return _um.CurrentUpgrades.ArrowFrequency * 0.3f;
 	}
 
-	public float GetDamageBonus()
+	public float GetDamageBonus( float yawOffset = 0f )
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
-		return _um.CurrentUpgrades.ArrowDamage * 5f;
+		var bonus = _um.CurrentUpgrades.ArrowDamage * 5f;
+		// Split shot arrows deal reduced damage
+		if ( GetSplitCount() > 0 && yawOffset != 0f )
+			bonus *= 0.5f;
+		return bonus;
 	}
 
 	public float GetSpeedBonus()

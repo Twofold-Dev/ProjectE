@@ -8,6 +8,7 @@ public sealed class Arrow : Component
 	[Property] public float Damage { get; set; } = 10f;
 	[Property] public float MaxDistance { get; set; } = 800f;
 	[Property] public Guid OwnerId { get; set; }
+	[Property] public int SplitCount { get; set; } = 0;
 
 	private Vector3 _startPosition;
 	private bool _hasHit = false;
@@ -21,8 +22,8 @@ public sealed class Arrow : Component
 	{
 		if ( _hasHit ) return;
 
-		// Move rightward
-		WorldPosition += Vector3.Right * Speed * Time.Delta;
+		// Move in the arrow's facing direction
+		WorldPosition += WorldRotation.Forward * Speed * Time.Delta;
 
 		// Check distance limit
 		if ( WorldPosition.Distance( _startPosition ) >= MaxDistance )
@@ -65,7 +66,35 @@ public sealed class Arrow : Component
 
 	private void DestroyArrow()
 	{
-		// TODO: Replace with pooled return later
+		if ( SplitCount > 0 && Vector3.DistanceBetween( _startPosition, WorldPosition ) > 10f )
+		{
+			SpawnSplitArrows();
+		}
 		GameObject.Destroy();
+	}
+
+	private void SpawnSplitArrows()
+	{
+		var spread = 15f;
+		var startAngle = -(SplitCount - 1) * spread * 0.5f;
+
+		for ( int i = 0; i < SplitCount; i++ )
+		{
+			var splitGo = new GameObject( true, $"Split_{OwnerId}_{i}" );
+			splitGo.WorldPosition = WorldPosition;
+			splitGo.WorldRotation = WorldRotation * Rotation.FromYaw( startAngle + i * spread );
+
+			var split = splitGo.Components.Create<Arrow>();
+			split.Damage = Damage * 0.5f;
+			split.Speed = Speed * 0.8f;
+			split.MaxDistance = MaxDistance * 0.5f;
+			split.OwnerId = OwnerId;
+			split.SplitCount = 0; // no further splitting
+
+			var model = splitGo.Components.Create<ModelRenderer>();
+			model.Model = Model.Cube;
+			splitGo.LocalScale = new Vector3( 1f, 0.15f, 0.15f );
+			splitGo.NetworkSpawn( null );
+		}
 	}
 }

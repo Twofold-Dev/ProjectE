@@ -16,6 +16,7 @@ public sealed class GameManager : Component
 	[Sync] public GameState State { get; set; } = GameState.Lobby;
 	[Sync] public int CurrentWave { get; set; } = 0;
 	[Sync] public int TotalScore { get; set; } = 0;
+	[Sync] public bool PlaystyleChosen { get; set; } = false;
 
 	protected override void OnStart()
 	{
@@ -76,6 +77,14 @@ public sealed class GameManager : Component
 
 		CurrentWave = wave;
 		State = GameState.UpgradeSelect;
+		Scene.TimeScale = 0; // Pause game for upgrade selection on EVERY wave
+
+		if ( wave == 1 && !PlaystyleChosen )
+		{
+			Log.Info( "Wave 1 complete — choose your playstyle" );
+			return; // Don't offer upgrades yet — playstyle selection comes first
+		}
+
 		Log.Info( $"Wave {wave} completed. Upgrade select phase." );
 
 		// Offer upgrades to each player
@@ -90,6 +99,7 @@ public sealed class GameManager : Component
 		if ( !Networking.IsHost ) return;
 
 		State = GameState.Playing;
+		Scene.TimeScale = 1;
 		Log.Info( "All players ready. Resuming play." );
 	}
 

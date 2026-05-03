@@ -505,40 +505,21 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        },
+        {
+          "__type": "UpgradeManager",
+          "__guid": "c5f65bb6-0130-43b4-9518-1e54341b36d0",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": [
-        {
-          "__guid": "cf1471d7-8a71-41dd-8287-a5bcf7b9953e",
-          "__version": 2,
-          "Flags": 0,
-          "Name": "UpgradeManager",
-          "Position": "0,0,0",
-          "Rotation": "0,0,0,1",
-          "Scale": "1,1,1",
-          "Tags": "",
-          "Enabled": true,
-          "NetworkMode": 2,
-          "NetworkFlags": 0,
-          "NetworkOrphaned": 0,
-          "NetworkTransmit": true,
-          "OwnerTransfer": 1,
-          "Components": [
-            {
-              "__type": "UpgradeManager",
-              "__guid": "8175c380-b35e-4e45-b895-c6143174e285",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
-            }
-          ],
-          "Children": []
-        },
         {
           "__guid": "b9915aa3-33f8-436e-b618-aa8ade491ec6",
           "__version": 2,
