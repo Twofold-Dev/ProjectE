@@ -1,0 +1,546 @@
+{
+  "assetCategories": {
+    "surface": {
+      "wood": {
+        "parquet": {}
+      }
+    }
+  },
+  "averageColor": "#000000",
+  "categories": [
+    "surface",
+    "wood",
+    "floor"
+  ],
+  "comp_version": 1,
+  "description": "",
+  "displacementBias": 0.918028,
+  "displacementCalibrationAccuracy": 0.99876,
+  "displacementScale": 0.155354,
+  "environment": {
+    "biome": "undefined",
+    "region": "Asia"
+  },
+  "highest_available_res": 16384,
+  "id": "ucmicfjl",
+  "json": {
+    "contentLength": 11523,
+    "uri": "ucmicfjl.json"
+  },
+  "maps": [
+    {
+      "averageColor": "#FFFFFF",
+      "bitDepth": 32,
+      "colorSpace": "sRGB",
+      "contentLength": 16489295,
+      "maxIntensity": 255,
+      "mimeType": "image/x-exr",
+      "minIntensity": 242,
+      "name": "AO",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "ao",
+      "uri": "ucmicfjl_8K_AO.exr"
+    },
+    {
+      "averageColor": "#FFFFFF",
+      "bitDepth": 8,
+      "colorSpace": "sRGB",
+      "contentLength": 1591212,
+      "maxIntensity": 255,
+      "mimeType": "image/jpeg",
+      "minIntensity": 242,
+      "name": "AO",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "ao",
+      "uri": "ucmicfjl_8K_AO.jpg"
+    },
+    {
+      "averageColor": "#765E4E",
+      "bitDepth": 16,
+      "colorSpace": "sRGB",
+      "contentLength": 217363788,
+      "maxIntensity": 117,
+      "mimeType": "image/x-exr",
+      "minIntensity": 81,
+      "name": "Basecolor",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "basecolor",
+      "uri": "ucmicfjl_8K_Basecolor.exr"
+    },
+    {
+      "averageColor": "#765E4E",
+      "bitDepth": 8,
+      "colorSpace": "sRGB",
+      "contentLength": 31465366,
+      "maxIntensity": 117,
+      "mimeType": "image/jpeg",
+      "minIntensity": 81,
+      "name": "Basecolor",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "basecolor",
+      "uri": "ucmicfjl_8K_Basecolor.jpg"
+    },
+    {
+      "averageColor": "#808080",
+      "bitDepth": 32,
+      "colorSpace": "Linear",
+      "contentLength": 179662019,
+      "maxIntensity": 255,
+      "mimeType": "image/x-exr",
+      "minIntensity": 0,
+      "name": "Bump",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "bump",
+      "uri": "ucmicfjl_8K_Bump.exr"
+    },
+    {
+      "averageColor": "#808080",
+      "bitDepth": 8,
+      "colorSpace": "Linear",
+      "contentLength": 7769847,
+      "maxIntensity": 255,
+      "mimeType": "image/jpeg",
+      "minIntensity": 0,
+      "name": "Bump",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "bump",
+      "uri": "ucmicfjl_8K_Bump.jpg"
+    },
+    {
+      "averageColor": "#FFFFFF",
+      "bitDepth": 32,
+      "colorSpace": "sRGB",
+      "contentLength": 207321633,
+      "maxIntensity": 255,
+      "mimeType": "image/x-exr",
+      "minIntensity": 255,
+      "name": "Cavity",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "cavity",
+      "uri": "ucmicfjl_8K_Cavity.exr"
+    },
+    {
+      "averageColor": "#FFFFFF",
+      "bitDepth": 8,
+      "colorSpace": "sRGB",
+      "contentLength": 32244719,
+      "maxIntensity": 255,
+      "mimeType": "image/jpeg",
+      "minIntensity": 255,
+      "name": "Cavity",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "cavity",
+      "uri": "ucmicfjl_8K_Cavity.jpg"
+    },
+    {
+      "averageColor": "#B5B5B5",
+      "bitDepth": 32,
+      "colorSpace": "Linear",
+      "contentLength": 203511111,
+      "maxIntensity": 199,
+      "mimeType": "image/x-exr",
+      "minIntensity": 161,
+      "name": "Gloss",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "gloss",
+      "uri": "ucmicfjl_8K_Gloss.exr"
+    },
+    {
+      "averageColor": "#B5B5B5",
+      "bitDepth": 8,
+      "colorSpace": "Linear",
+      "contentLength": 28398970,
+      "maxIntensity": 199,
+      "mimeType": "image/jpeg",
+      "minIntensity": 161,
+      "name": "Gloss",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "gloss",
+      "uri": "ucmicfjl_8K_Gloss.jpg"
+    },
+    {
+      "averageColor": "#8281FF",
+      "bitDepth": 16,
+      "colorSpace": "Linear",
+      "contentLength": 154108069,
+      "maxIntensity": 146,
+      "mimeType": "image/x-exr",
+      "minIntensity": 140,
+      "name": "Normal",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "normal",
+      "uri": "ucmicfjl_8K_Normal.exr"
+    },
+    {
+      "averageColor": "#8281FF",
+      "bitDepth": 8,
+      "colorSpace": "Linear",
+      "contentLength": 40939291,
+      "maxIntensity": 146,
+      "mimeType": "image/jpeg",
+      "minIntensity": 140,
+      "name": "Normal",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "normal",
+      "uri": "ucmicfjl_8K_Normal.jpg"
+    },
+    {
+      "averageColor": "#4A4A4A",
+      "bitDepth": 32,
+      "colorSpace": "Linear",
+      "contentLength": 212503909,
+      "maxIntensity": 94,
+      "mimeType": "image/x-exr",
+      "minIntensity": 56,
+      "name": "Roughness",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "roughness",
+      "uri": "ucmicfjl_8K_Roughness.exr"
+    },
+    {
+      "averageColor": "#4A4A4A",
+      "bitDepth": 8,
+      "colorSpace": "Linear",
+      "contentLength": 29311847,
+      "maxIntensity": 94,
+      "mimeType": "image/jpeg",
+      "minIntensity": 56,
+      "name": "Roughness",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "roughness",
+      "uri": "ucmicfjl_8K_Roughness.jpg"
+    },
+    {
+      "averageColor": "#383838",
+      "bitDepth": 16,
+      "colorSpace": "sRGB",
+      "contentLength": 196918016,
+      "maxIntensity": 56,
+      "mimeType": "image/x-exr",
+      "minIntensity": 56,
+      "name": "Specular",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "specular",
+      "uri": "ucmicfjl_8K_Specular.exr"
+    },
+    {
+      "averageColor": "#383838",
+      "bitDepth": 8,
+      "colorSpace": "sRGB",
+      "contentLength": 16323658,
+      "maxIntensity": 56,
+      "mimeType": "image/jpeg",
+      "minIntensity": 56,
+      "name": "Specular",
+      "physicalSize": "2x2",
+      "resolution": "8192x8192",
+      "type": "specular",
+      "uri": "ucmicfjl_8K_Specular.jpg"
+    }
+  ],
+  "meta": [
+    {
+      "key": "scanArea",
+      "name": "Scan Area",
+      "value": "2x2 m"
+    },
+    {
+      "key": "height",
+      "name": "Height",
+      "value": "0.001 m"
+    },
+    {
+      "key": "tileable",
+      "name": "Tileable",
+      "value": true
+    },
+    {
+      "key": "texelDensity",
+      "name": "Texel Density",
+      "value": "8192 px/m"
+    },
+    {
+      "key": "calibration",
+      "name": "Calibration",
+      "value": "GretagMacbeth ColorChecker Color Rendition Chart"
+    },
+    {
+      "key": "scanner",
+      "name": "Scanner",
+      "value": "MKX"
+    }
+  ],
+  "models": [],
+  "name": "Brick Bond Walnut Parquet",
+  "pack": {
+    "_id": "polished-parquets",
+    "name": "Polished Parquets"
+  },
+  "physicalSize": null,
+  "points": 2,
+  "previews": {
+    "images": [
+      {
+        "contentLength": 234725,
+        "resolution": "360x360",
+        "tags": [
+          "thumb"
+        ],
+        "uri": "ucmicfjl_Grid_360.png"
+      },
+      {
+        "contentLength": 314882,
+        "resolution": "420x420",
+        "tags": [
+          "thumb"
+        ],
+        "uri": "ucmicfjl_Grid_420.png"
+      },
+      {
+        "contentLength": 914287,
+        "resolution": "720x720",
+        "tags": [
+          "thumb",
+          "retina"
+        ],
+        "uri": "ucmicfjl_Grid_720.png"
+      },
+      {
+        "contentLength": 1239181,
+        "resolution": "840x840",
+        "tags": [
+          "thumb",
+          "retina"
+        ],
+        "uri": "ucmicfjl_Grid_840.png"
+      },
+      {
+        "contentLength": 1916460,
+        "resolution": "1440x768",
+        "tags": [
+          "preview",
+          "clay"
+        ],
+        "uri": "ucmicfjl_PopupClay_1440.png"
+      },
+      {
+        "contentLength": 3553641,
+        "resolution": "1920x1080",
+        "tags": [
+          "preview",
+          "clay"
+        ],
+        "uri": "ucmicfjl_PopupClay_1920.png"
+      },
+      {
+        "contentLength": 7614650,
+        "resolution": "2880x1536",
+        "tags": [
+          "preview",
+          "clay",
+          "retina"
+        ],
+        "uri": "ucmicfjl_PopupClay_2880.png"
+      },
+      {
+        "contentLength": 14404124,
+        "resolution": "3840x2160",
+        "tags": [
+          "preview",
+          "clay",
+          "retina"
+        ],
+        "uri": "ucmicfjl_PopupClay_3840.png"
+      },
+      {
+        "contentLength": 2649269,
+        "resolution": "1440x768",
+        "tags": [
+          "preview",
+          "tiled"
+        ],
+        "uri": "ucmicfjl_PopupTiled_1440.png"
+      },
+      {
+        "contentLength": 4895197,
+        "resolution": "1920x1080",
+        "tags": [
+          "preview",
+          "tiled"
+        ],
+        "uri": "ucmicfjl_PopupTiled_1920.png"
+      },
+      {
+        "contentLength": 10482230,
+        "resolution": "2880x1536",
+        "tags": [
+          "preview",
+          "tiled",
+          "retina"
+        ],
+        "uri": "ucmicfjl_PopupTiled_2880.png"
+      },
+      {
+        "contentLength": 19738824,
+        "resolution": "3840x2160",
+        "tags": [
+          "preview",
+          "tiled",
+          "retina"
+        ],
+        "uri": "ucmicfjl_PopupTiled_3840.png"
+      },
+      {
+        "contentLength": 2626524,
+        "resolution": "1440x768",
+        "tags": [
+          "preview"
+        ],
+        "uri": "ucmicfjl_Popup_1440.png"
+      },
+      {
+        "contentLength": 4850376,
+        "resolution": "1920x1080",
+        "tags": [
+          "preview"
+        ],
+        "uri": "ucmicfjl_Popup_1920.png"
+      },
+      {
+        "contentLength": 10413177,
+        "resolution": "2880x1536",
+        "tags": [
+          "preview",
+          "retina"
+        ],
+        "uri": "ucmicfjl_Popup_2880.png"
+      },
+      {
+        "contentLength": 19839861,
+        "resolution": "3840x2160",
+        "tags": [
+          "preview",
+          "retina"
+        ],
+        "uri": "ucmicfjl_Popup_3840.png"
+      }
+    ],
+    "relativeSize": "1x1",
+    "scaleReferences": []
+  },
+  "process_date": "2024-04-17 06:16:41",
+  "properties": [],
+  "referencePreviews": {
+    "maps": [],
+    "models": []
+  },
+  "references": [],
+  "revised": false,
+  "semanticTags": {
+    "3d_mesh": [],
+    "architectural_style": {},
+    "asset_type": "surface",
+    "contains": [
+      "wood",
+      "parquet",
+      "pattern"
+    ],
+    "descriptive": [
+      "clean",
+      " shiny",
+      " patterned",
+      " brick bond"
+    ],
+    "environment": [
+      "urban"
+    ],
+    "industry": [
+      "archviz",
+      "games",
+      "VFX"
+    ],
+    "interior_exterior": [
+      "interior"
+    ],
+    "latin_name": [],
+    "locations": {},
+    "maxSize": 2,
+    "minSize": 2,
+    "name": "Brick Bond Walnut Parquet",
+    "orientation": [
+      "floor"
+    ],
+    "resolution": 16384,
+    "season": [],
+    "state": [
+      "new"
+    ],
+    "subject_matter": "manmade",
+    "theme": [
+      "interiors",
+      " decorative",
+      " office",
+      " home"
+    ]
+  },
+  "tags": [
+    "surface",
+    "brown",
+    "umber.flooring",
+    "pattern",
+    "interiors",
+    "decorative"
+  ],
+  "texelDensity": 8192,
+  "texture_type": "basic",
+  "ue_plugin_archives": [
+    {
+      "contentLength": 180456262,
+      "gltfVersion": "2.0",
+      "tier": 0,
+      "type": "gltf",
+      "uri": "ue_plugin_archives/tier_0/ucmicfjl_tier_0.zip",
+      "version": 1
+    },
+    {
+      "contentLength": 51063369,
+      "gltfVersion": "2.0",
+      "tier": 1,
+      "type": "gltf",
+      "uri": "ue_plugin_archives/tier_1/ucmicfjl_tier_1.zip",
+      "version": 1
+    },
+    {
+      "contentLength": 13689048,
+      "gltfVersion": "2.0",
+      "tier": 2,
+      "type": "gltf",
+      "uri": "ue_plugin_archives/tier_2/ucmicfjl_tier_2.zip",
+      "version": 1
+    },
+    {
+      "contentLength": 1096288,
+      "gltfVersion": "2.0",
+      "tier": 3,
+      "type": "gltf",
+      "uri": "ue_plugin_archives/tier_3/ucmicfjl_tier_3.zip",
+      "version": 1
+    }
+  ],
+  "version": 2
+}

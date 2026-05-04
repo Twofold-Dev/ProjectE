@@ -1,0 +1,14 @@
+
+Layer0
+{
+	shader "shaders/complex.shader_c"
+
+	TextureColor "model/pen.fbm/texture_pbr_20250901.png"
+	TextureAmbientOcclusion "materials/default/default_ao.tga"
+	TextureNormal "model/pen.fbm/texture_pbr_20250901_normal.png"
+	TextureRoughness "model/pen.fbm/texture_pbr_20250901_roughness.png"
+	F_METALNESS_TEXTURE 1
+	F_SPECULAR 1
+	TextureMetalness "model/pen.fbm/texture_pbr_20250901_metallic.png"
+
+}

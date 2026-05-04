@@ -95,7 +95,7 @@
       "Name": "Plane",
       "Position": "0,-608.081177,0",
       "Rotation": "0,0,0,1",
-      "Scale": "5.23627806,21.2792263,9.97102833",
+      "Scale": "20,20,20",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -113,7 +113,7 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/narrow wooden plank flooring/wooden plank floor.vmat",
+          "MaterialOverride": "wallsflloor/floor/brick_bond_walnut_parquet_ucmicfjl_4k.vmat",
           "Materials": null,
           "Model": "models/dev/plane.vmdl",
           "OnComponentDestroy": null,
@@ -345,7 +345,7 @@
             "Name": "unknown",
             "Id": "00000000-0000-0000-0000-000000000000"
           },
-          "FootstepVolume": 1,
+          "FootstepVolume": 20,
           "HideBodyInFirstPerson": true,
           "JumpSpeed": 0,
           "LookSensitivity": 1,
@@ -494,6 +494,8 @@
           "ArrowDistance": 800,
           "ArrowSpeed": 500,
           "BaseFireRate": 1,
+          "BladeModel": "model/scissors.vmdl",
+          "BladeScale": "1,1,1",
           "ForwardSpeed": 200,
           "LaneMaxX": 200,
           "LaneMinX": -200,
@@ -504,7 +506,17 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "PenFireSound": "sound/pen.sound",
+          "PenFireVolume": 1,
+          "PenHitSound": "sound/wood.sound",
+          "PenHitVolume": 5,
+          "PenModel": "model/pen.vmdl",
+          "PenScale": "1,1,1",
+          "ScissorHitSound": "sound/wood.sound",
+          "ScissorHitVolume": 5,
+          "ScissorLaunchSound": "sound/scissor.sound",
+          "ScissorLaunchVolume": 1
         },
         {
           "__type": "UpgradeManager",
@@ -2495,7 +2507,7 @@
           "Flags": 0,
           "LeftWallPrefab": {
             "_type": "gameobject",
-            "go": "64a8622e-8d5d-4e32-b8c6-62d47ca2c97e"
+            "go": "53b0ea97-89cf-4a9f-bb3d-640118fe874a"
           },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -2505,16 +2517,16 @@
           "OnComponentUpdate": null,
           "RightWallPrefab": {
             "_type": "gameobject",
-            "go": "e636e69a-3dbf-44b4-8163-6737a24b53da"
+            "go": "c8a436ec-b1df-4bb1-8da6-1e11b001eacd"
           },
           "TileCount": 5,
           "TilePrefab": {
             "_type": "gameobject",
             "go": "029df6ce-5762-4f27-90cd-5ca9013b4167"
           },
-          "TileSize": 2127,
+          "TileSize": 2000,
           "WallCount": 5,
-          "WallSize": 2127,
+          "WallSize": 1500,
           "WallXOffset": 300
         }
       ],
@@ -2550,150 +2562,6 @@
           "SkyIndirectLighting": true,
           "SkyMaterial": "materials/skybox/skybox_dark_01.vmat",
           "Tint": "1,1,1,1"
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "64a8622e-8d5d-4e32-b8c6-62d47ca2c97e",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Wall_L",
-      "Position": "278.698212,-597.840393,230.541733",
-      "Rotation": "0,0,0,1",
-      "Scale": "0.323739469,43.0590324,12.3462753",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ModelRenderer",
-          "__guid": "10005927-0f10-4d5c-9e91-1917fb02c6e6",
-          "__enabled": true,
-          "Flags": 0,
-          "BodyGroups": 18446744073709551615,
-          "CreateAttachments": false,
-          "LodOverride": null,
-          "MaterialGroup": null,
-          "MaterialOverride": "materials/bowiewallgrunge.vmat",
-          "Materials": null,
-          "Model": null,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "RenderOptions": {
-            "GameLayer": true,
-            "OverlayLayer": false,
-            "BloomLayer": false,
-            "AfterUILayer": false
-          },
-          "RenderType": "On",
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.BoxCollider",
-          "__guid": "bfe5b142-3bcf-4fd8-8120-40e91775f2d3",
-          "__enabled": true,
-          "Flags": 0,
-          "Center": "0,0,0",
-          "ColliderFlags": 0,
-          "Elasticity": null,
-          "Friction": null,
-          "IsTrigger": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnObjectTriggerEnter": null,
-          "OnObjectTriggerExit": null,
-          "OnTriggerEnter": null,
-          "OnTriggerExit": null,
-          "RollingResistance": null,
-          "Scale": "50,50,50",
-          "Static": false,
-          "Surface": null,
-          "SurfaceVelocity": "0,0,0"
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "e636e69a-3dbf-44b4-8163-6737a24b53da",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Wall_R",
-      "Position": "-267.301147,-612.217773,230.541733",
-      "Rotation": "0,-0.999999642,0,4.61935997E-07",
-      "Scale": "0.323739469,43,12.3462753",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ModelRenderer",
-          "__guid": "19c3d08c-6863-426d-bdfa-3b5eed8c5229",
-          "__enabled": true,
-          "Flags": 0,
-          "BodyGroups": 18446744073709551615,
-          "CreateAttachments": false,
-          "LodOverride": null,
-          "MaterialGroup": null,
-          "MaterialOverride": "materials/bowiewallgrunge.vmat",
-          "Materials": null,
-          "Model": null,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "RenderOptions": {
-            "GameLayer": true,
-            "OverlayLayer": false,
-            "BloomLayer": false,
-            "AfterUILayer": false
-          },
-          "RenderType": "On",
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.BoxCollider",
-          "__guid": "3883f1fc-3e06-45e0-a978-9f86d8f2e21e",
-          "__enabled": true,
-          "Flags": 0,
-          "Center": "0,0,0",
-          "ColliderFlags": 0,
-          "Elasticity": null,
-          "Friction": null,
-          "IsTrigger": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnObjectTriggerEnter": null,
-          "OnObjectTriggerExit": null,
-          "OnTriggerEnter": null,
-          "OnTriggerExit": null,
-          "RollingResistance": null,
-          "Scale": "50,50,50",
-          "Static": false,
-          "Surface": null,
-          "SurfaceVelocity": "0,0,0"
         }
       ],
       "Children": []
@@ -3053,7 +2921,7 @@
       "Rotation": "-0.318531752,0.631298304,0.318531752,0.631298304",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": true,
+      "Enabled": false,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -3131,6 +2999,246 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "53b0ea97-89cf-4a9f-bb3d-640118fe874a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "WallL",
+      "Position": "364.636505,-600,509.635925",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,30,30",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "09e66ad0-cfd9-4943-b13d-739047b06748",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": {
+            "indexed": {
+              "0": "wallsflloor/smooth_concrete_wall_uhnlfbvn_4k.vmat"
+            }
+          },
+          "Model": "models/dev/box.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "2fd26e5e-dffa-495e-b4bf-2d042fc2c1a6",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "0,0,0",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "50,50,50",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c8a436ec-b1df-4bb1-8da6-1e11b001eacd",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "WallR",
+      "Position": "-351.808899,-600,509.635925",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,30,30",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "530ece1e-7b9b-4354-9552-1c36daa4ad76",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": {
+            "indexed": {
+              "0": "wallsflloor/smooth_concrete_wall_uhnlfbvn_4k.vmat"
+            }
+          },
+          "Model": "models/dev/box.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "4ca40b8c-84e2-4549-9166-f04443f4a33e",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "0,0,0",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "50,50,50",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "92a57c20-214d-42b9-8515-68a33875746a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Ambience",
+      "Position": "12.0499611,636.872559,1071.95239",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SoundPointComponent",
+          "__guid": "eb5384a1-1ee5-4ae0-9d4a-2cdff3d372f6",
+          "__enabled": true,
+          "Flags": 0,
+          "Distance": 512,
+          "DistanceAttenuation": false,
+          "DistanceAttenuationOverride": false,
+          "Falloff": [
+            {
+              "x": 0,
+              "y": 1,
+              "in": 3.1415927,
+              "out": -3.1415927,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "Force2d": false,
+          "MaxRepeatTime": 1,
+          "MinRepeatTime": 1,
+          "Occlusion": false,
+          "OcclusionOverride": false,
+          "OcclusionRadius": 32,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Pitch": 1,
+          "PlayOnStart": true,
+          "ReflectionOverride": false,
+          "Reflections": false,
+          "Repeat": true,
+          "SoundEvent": "sound/327497__davidfrbr__office-ambience-01-owi.sound",
+          "SoundOverride": false,
+          "StopOnNew": false,
+          "TargetMixer": {
+            "Name": "unknown",
+            "Id": "00000000-0000-0000-0000-000000000000"
+          },
+          "Volume": 1
+        },
+        {
+          "__type": "CameraFollower",
+          "__guid": "8b77f2a3-a3ff-4530-b5ef-19741349cbee",
+          "__enabled": true,
+          "Flags": 0,
+          "FollowDistance": 0,
+          "FollowHeight": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OverrideRotation": false,
+          "Pitch": 30,
+          "Roll": 0,
+          "Smoothness": 0.95,
+          "Yaw": 0
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -3158,13 +3266,13 @@
           "$blob": "717b7f88-47d6-49cd-992f-fdbefb7139be"
         }
       },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
         }
+      },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       }
     }
   },
@@ -3172,14 +3280,12 @@
   "Title": null,
   "Description": null,
   "__references": [
-    "danivisit.woodenplankfloor#162712",
     "exeros.breenchair#62549",
     "facepunch.office_chair#144847",
     "facepunch.office_screen_01#143469",
     "halfpeeps.office_blinds#24530",
     "polyrats.untitled_3#13911",
-    "rlensound.cosmicgreen_3d#53965",
-    "semxy.bowiewallgrunge#24050"
+    "rlensound.cosmicgreen_3d#53965"
   ],
   "__version": 3
 }

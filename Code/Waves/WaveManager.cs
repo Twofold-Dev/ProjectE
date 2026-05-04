@@ -329,46 +329,173 @@ public sealed class WaveManager : Component
 
 	private void SpawnUpgradeGate()
 	{
-		// 4 fixed X positions for gates
-		float[] xPositions = { 150f, 50f, -50f, -150f };
+		// 2 gates at fixed X positions
+		float[] gatePositions = { 100f, -200f };
+		// 6 gate categories: DAMAGE, FIRE RATE, PEN+X, CD DOWN, BLADE+X, RANGE
+		UpgradeType[] gateTypes = {
+			UpgradeType.ArrowDamage,    // DAMAGE gate
+			UpgradeType.ArrowFrequency, // FIRE RATE gate
+			UpgradeType.SplitCount,     // PEN+X gate
+			UpgradeType.SwordFrequency, // CD DOWN gate
+			UpgradeType.SwordCount,     // BLADE+X gate
+			UpgradeType.ArrowDistance,  // RANGE gate
+		};
 
-		for ( int i = 0; i < xPositions.Length; i++ )
+		for ( int i = 0; i < gatePositions.Length; i++ )
 		{
-			var type = i % 2 == 0 ? UpgradeType.ArrowDamage : UpgradeType.ArrowFrequency;
+			var type = gateTypes[Random.Shared.Int( 0, gateTypes.Length - 1 )];
+			var amount = GetRandomAmount( type );
+			var displayName = GetGateDisplayName( type );
+			var amountText = GetAmountText( type, amount );
 
 			var gateGo = new GameObject( true, $"Gate_{type}_{i}" );
 			var spawnY = GetPlayerY() - SpawnDistance;
-			gateGo.WorldPosition = new Vector3( xPositions[i], spawnY, 0 );
-			gateGo.WorldRotation = Rotation.From( 0, 0, -90 ); // perpendicular to floor
+			gateGo.WorldPosition = new Vector3( gatePositions[i], spawnY, 0 );
+			gateGo.WorldRotation = Rotation.From( 0, 0, -90 );
 			gateGo.LocalScale = Vector3.One;
 
 			var gate = gateGo.Components.Create<UpgradeGate>();
 			gate.UpgradeType = type;
+			gate.Amount = amount;
+			gate.DisplayName = displayName;
+			gate.AmountText = amountText;
 
 			var model = gateGo.Components.Create<ModelRenderer>();
 			model.Model = Model.Plane;
-			model.Tint = type == UpgradeType.ArrowDamage
-				? new Color( 1f, 0.3f, 0.3f, 0.4f )
-				: new Color( 0.3f, 0.7f, 1f, 0.4f );
+			model.Tint = GetGateColor( type );
 
 			var col = gateGo.Components.Create<BoxCollider>();
 			col.IsTrigger = true;
 
-			// Label centered on gate
+			// Label — same sizing as enemy HP panel
 			var labelGo = new GameObject( true, "GateLabel" );
 			labelGo.Parent = gateGo;
 			labelGo.LocalPosition = Vector3.Zero;
-			labelGo.LocalScale = new Vector3( 3f, 3f, 3f );
+			labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
 			var wp = labelGo.Components.Create<WorldPanel>();
-			wp.PanelSize = new Vector2( 800, 400 );
+			wp.PanelSize = new Vector2( 1200, 300 );
 			wp.LookAtCamera = true;
 			wp.RenderOptions.AfterUI = true;
 			var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
-			label.Text = type == UpgradeType.ArrowDamage ? "STAPLER\nPOWER" : "COFFEE\nRUSH";
+			label.Text = $"{displayName}\n{amountText}";
 
 			gateGo.NetworkSpawn( null );
 		}
 	}
+
+	/// <summary>
+	/// Spawn an upgrade pickup at a position (from enemy drop).
+	/// </summary>
+	private void SpawnUpgradePickup( Vector3 position )
+	{
+		// Drops can be any single upgrade type
+		UpgradeType[] gateTypes = {
+			UpgradeType.ArrowFrequency, UpgradeType.ArrowDamage,
+			UpgradeType.ArrowSpeed, UpgradeType.ArrowDistance,
+			UpgradeType.SwordCount, UpgradeType.SwordDamage,
+			UpgradeType.SwordFrequency, UpgradeType.SwordRange,
+			UpgradeType.SplitCount, UpgradeType.HealthBoost
+		};
+		var type = gateTypes[Random.Shared.Int( 0, gateTypes.Length - 1 )];
+		var amount = GetRandomAmount( type );
+
+		var go = new GameObject( true, $"Drop_{type}" );
+		go.WorldPosition = position;
+		go.WorldRotation = Rotation.From( 0, 0, -90 );
+		go.LocalScale = Vector3.One * 0.5f;
+
+		var gate = go.Components.Create<UpgradeGate>();
+		gate.UpgradeType = type;
+		gate.Amount = amount;
+		gate.DisplayName = GetGateDisplayName( type );
+		gate.AmountText = GetAmountText( type, amount );
+
+		var model = go.Components.Create<ModelRenderer>();
+		model.Model = Model.Plane;
+		model.Tint = GetGateColor( type );
+
+		var col = go.Components.Create<BoxCollider>();
+		col.IsTrigger = true;
+
+		var labelGo = new GameObject( true, "DropLabel" );
+		labelGo.Parent = go;
+		labelGo.LocalPosition = Vector3.Zero;
+		labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
+		var wp = labelGo.Components.Create<WorldPanel>();
+		wp.PanelSize = new Vector2( 1200, 300 );
+		wp.LookAtCamera = true;
+		wp.RenderOptions.AfterUI = true;
+		var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
+		label.Text = $"{GetGateDisplayName( type )}\n{GetAmountText( type, amount )}";
+
+		go.NetworkSpawn( null );
+	}
+
+	private float GetRandomAmount( UpgradeType type )
+	{
+		return type switch
+		{
+			UpgradeType.ArrowFrequency => Random.Shared.Float( 0.2f, 0.5f ),
+			UpgradeType.ArrowDamage => Random.Shared.Int( 3, 8 ),
+			UpgradeType.ArrowSpeed => Random.Shared.Int( 50, 150 ),
+			UpgradeType.ArrowDistance => Random.Shared.Int( 100, 300 ),
+			UpgradeType.SwordCount => Random.Shared.Int( 1, 2 ),
+			UpgradeType.SwordDamage => Random.Shared.Int( 5, 12 ),
+			UpgradeType.SplitCount => Random.Shared.Int( 1, 2 ),
+			UpgradeType.SwordFrequency => Random.Shared.Int( 1, 2 ),
+			UpgradeType.SwordRange => Random.Shared.Int( 1, 2 ),
+			UpgradeType.HealthBoost => Random.Shared.Int( 15, 30 ),
+			_ => 1,
+		};
+	}
+
+	private string GetGateDisplayName( UpgradeType type ) => type switch
+	{
+		UpgradeType.ArrowFrequency => "FIRE RATE",
+		UpgradeType.ArrowDamage => "DAMAGE",
+		UpgradeType.ArrowDistance => "RANGE",
+		UpgradeType.SwordCount => "BLADE",
+		UpgradeType.SwordFrequency => "CD DOWN",
+		UpgradeType.SplitCount => "PEN",
+		UpgradeType.ArrowSpeed => "PROJ SPD",
+		UpgradeType.SwordDamage => "SCISSOR DMG",
+		UpgradeType.SwordRange => "SCISSOR RNG",
+		UpgradeType.HealthBoost => "HEALTH",
+		_ => type.ToString(),
+	};
+
+	private string GetAmountText( UpgradeType type, float amount )
+	{
+		return type switch
+		{
+			UpgradeType.ArrowFrequency => $"+{amount:F1}/s",
+			UpgradeType.ArrowDamage => $"+{(int)amount}",
+			UpgradeType.ArrowSpeed => $"+{(int)amount}",
+			UpgradeType.ArrowDistance => $"+{(int)amount}",
+			UpgradeType.SwordCount => $"+{(int)amount}",
+			UpgradeType.SwordDamage => $"+{(int)amount}",
+			UpgradeType.SwordFrequency => $"+{(int)amount}",
+			UpgradeType.SwordRange => $"+{(int)amount}",
+			UpgradeType.SplitCount => $"+{(int)amount}",
+			UpgradeType.HealthBoost => $"+{(int)amount} HP",
+			_ => $"+{(int)amount}",
+		};
+	}
+
+	private Color GetGateColor( UpgradeType type ) => type switch
+	{
+		UpgradeType.ArrowFrequency => new Color( 0.3f, 0.7f, 1f, 0.4f ),   // blue
+		UpgradeType.ArrowDamage => new Color( 1f, 0.3f, 0.3f, 0.4f ),      // red
+		UpgradeType.ArrowSpeed => new Color( 0.3f, 1f, 0.3f, 0.4f ),       // green
+		UpgradeType.ArrowDistance => new Color( 0.7f, 0.3f, 1f, 0.4f ),    // purple
+		UpgradeType.SwordCount => new Color( 1f, 0.7f, 0.3f, 0.4f ),       // orange
+		UpgradeType.SwordDamage => new Color( 1f, 0.4f, 0.4f, 0.4f ),      // red-pink
+		UpgradeType.SplitCount => new Color( 0.3f, 1f, 0.3f, 0.4f ),       // green
+		UpgradeType.SwordFrequency => new Color( 0.3f, 0.7f, 1f, 0.4f ),   // blue
+		UpgradeType.SwordRange => new Color( 0.7f, 0.3f, 1f, 0.4f ),       // purple
+		UpgradeType.HealthBoost => new Color( 0.3f, 1f, 0.3f, 0.4f ),      // green
+		_ => new Color( 0.5f, 0.5f, 0.5f, 0.4f ),
+	};
 
 	private void OnEnemyKilled( Enemy enemy, Guid killerId )
 	{
@@ -378,6 +505,12 @@ public sealed class WaveManager : Component
 		if ( _gm.IsValid() )
 		{
 			_gm.AddScore( enemy.ScoreValue );
+		}
+
+		// 30% chance to drop an upgrade pickup
+		if ( Random.Shared.Float( 0, 1 ) < 0.3f && enemy.IsValid() )
+		{
+			SpawnUpgradePickup( enemy.WorldPosition );
 		}
 
 		Log.Info( $"Enemy killed by {killerId}. {EnemiesRemaining} remaining." );

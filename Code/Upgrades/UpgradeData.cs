@@ -10,16 +10,21 @@ public enum Playstyle
 /// </summary>
 public enum UpgradeType
 {
-	ArrowFrequency,  // Coffee Rush — faster shooting
-	ArrowDamage,     // Stapler Power — more damage per shot
-	ArrowSpeed,      // Aerodynamics — faster projectile
-	ArrowDistance,   // Paper Stream — longer range
-	SwordCount,      // Extra Shredders — more orbiting shredders
-	SwordDamage,     // Sharp Blades — stronger shredders
-	PetCount,        // Desk Buddies — more companions
-	PetFireRate,     // Busy Buddies — faster companion attacks
-	MovementSpeed,   // Office Chair — faster movement
-	HealthBoost,     // Sick Days — bonus health
+	ArrowFrequency,  // FIRE RATE gate
+	ArrowDamage,     // DAMAGE gate
+	ArrowSpeed,
+	ArrowDistance,   // RANGE gate
+	SwordCount,      // BLADE+X gate
+	SwordDamage,
+	SwordFrequency,  // CD DOWN gate
+	SwordRange,
+	SplitCount,      // PEN+X gate
+	PenBounce,       // card only
+	PenPierce,       // card only
+	BladeBounce,     // card only
+	PetCount,
+	PetFireRate,
+	HealthBoost,
 }
 
 /// <summary>
@@ -35,11 +40,16 @@ public sealed class UpgradeState
 	public int ArrowDamage { get; set; } = 0;
 	public int ArrowSpeed { get; set; } = 0;
 	public int ArrowDistance { get; set; } = 0;
-	public int SwordCount { get; set; } = 0;
+	public int SwordCount { get; set; } = 1;
 	public int SwordDamage { get; set; } = 0;
+	public int SwordFrequency { get; set; } = 0;
+	public int SwordRange { get; set; } = 0;
+	public int SplitCount { get; set; } = 0;
+	public int PenBounce { get; set; } = 0;
+	public int PenPierce { get; set; } = 0;
+	public int BladeBounce { get; set; } = 0;
 	public int PetCount { get; set; } = 0;
 	public int PetFireRate { get; set; } = 0;
-	public int MovementSpeed { get; set; } = 0;
 	public int HealthBoost { get; set; } = 0;
 
 	/// <summary>
@@ -55,9 +65,14 @@ public sealed class UpgradeState
 			case UpgradeType.ArrowDistance: ArrowDistance++; break;
 			case UpgradeType.SwordCount: SwordCount++; break;
 			case UpgradeType.SwordDamage: SwordDamage++; break;
+			case UpgradeType.SwordFrequency: SwordFrequency++; break;
+			case UpgradeType.SwordRange: SwordRange++; break;
+			case UpgradeType.SplitCount: SplitCount++; break;
+			case UpgradeType.PenBounce: PenBounce++; break;
+			case UpgradeType.PenPierce: PenPierce++; break;
+			case UpgradeType.BladeBounce: BladeBounce++; break;
 			case UpgradeType.PetCount: PetCount++; break;
 			case UpgradeType.PetFireRate: PetFireRate++; break;
-			case UpgradeType.MovementSpeed: MovementSpeed++; break;
 			case UpgradeType.HealthBoost: HealthBoost++; break;
 		}
 	}
@@ -73,9 +88,14 @@ public sealed class UpgradeState
 		UpgradeType.ArrowDistance => ArrowDistance,
 		UpgradeType.SwordCount => SwordCount,
 		UpgradeType.SwordDamage => SwordDamage,
+		UpgradeType.SwordFrequency => SwordFrequency,
+		UpgradeType.SwordRange => SwordRange,
+		UpgradeType.SplitCount => SplitCount,
+		UpgradeType.PenBounce => PenBounce,
+		UpgradeType.PenPierce => PenPierce,
+		UpgradeType.BladeBounce => BladeBounce,
 		UpgradeType.PetCount => PetCount,
 		UpgradeType.PetFireRate => PetFireRate,
-		UpgradeType.MovementSpeed => MovementSpeed,
 		UpgradeType.HealthBoost => HealthBoost,
 		_ => 0,
 	};

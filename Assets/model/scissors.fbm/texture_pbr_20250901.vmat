@@ -1,0 +1,14 @@
+
+Layer0
+{
+	shader "shaders/complex.shader_c"
+
+	TextureColor "model/scissors.fbm/texture_pbr_20250901.png"
+	TextureAmbientOcclusion "materials/default/default_ao.tga"
+	TextureNormal "model/scissors.fbm/texture_pbr_20250901_normal.png"
+	TextureRoughness "model/scissors.fbm/texture_pbr_20250901_roughness.png"
+	F_METALNESS_TEXTURE 1
+	F_SPECULAR 1
+	TextureMetalness "model/scissors.fbm/texture_pbr_20250901_metallic.png"
+
+}

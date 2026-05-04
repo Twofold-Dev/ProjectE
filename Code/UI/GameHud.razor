@@ -17,12 +17,13 @@
             {
                 <div class="stats-panel @entry.Side">
                     <div class="stats-title">@entry.Name</div>
-                    <div class="stat-row">☕ Coffee: @entry.FireRate</div>
-                    <div class="stat-row">🔧 Staple: @entry.Damage</div>
-                    <div class="stat-row">✈️ Aero: @entry.Speed</div>
-                    <div class="stat-row">📄 Stream: @entry.Range</div>
-                    <div class="stat-row">🔗 Split: @entry.SplitCount</div>
-                    <div class="stat-row">🪑 Chair: @entry.MoveSpeed</div>
+                    <div class="stat-row">Fire Rate: @entry.FireRate</div>
+                    <div class="stat-row">Damage: @entry.Damage</div>
+                    <div class="stat-row">Speed: @entry.Speed</div>
+                    <div class="stat-row">Range: @entry.Range</div>
+                    <div class="stat-row">Pens: @entry.SplitCount</div>
+                    <div class="stat-row">Scissors: @entry.ShredderCount | @entry.ShredderDamage dmg | Rng @entry.ShredderRange</div>
+                    <div class="stat-row">Bounce: @entry.PenBounce | Pierce: @entry.PenPierce | BladeBn: @entry.BladeBounce</div>
                 </div>
             }
         </div>
@@ -81,7 +82,12 @@
                 Speed = $"{(int)p.EffectiveSpeed}",
                 Range = $"{(int)p.EffectiveRange}",
                 SplitCount = $"{p.EffectiveSplitCount}",
-                MoveSpeed = $"{(int)(p.MoveSpeed + p.GetMoveSpeedBonus())}",
+                ShredderCount = $"{p.GetShredderCount()}",
+                ShredderDamage = $"{(int)p.GetShredderDamage()}",
+                ShredderRange = $"{p.GetShredderRange()}",
+                PenBounce = $"{p.GetPenBounce()}",
+                PenPierce = $"{p.GetPenPierce()}",
+                BladeBounce = $"{p.GetBladeBounce()}",
             } );
             idx++;
         }
@@ -105,7 +111,12 @@
             hash = hash * 31 + p.EffectiveSpeed.GetHashCode();
             hash = hash * 31 + p.EffectiveRange.GetHashCode();
             hash = hash * 31 + p.EffectiveSplitCount.GetHashCode();
-            hash = hash * 31 + (p.MoveSpeed + p.GetMoveSpeedBonus()).GetHashCode();
+            hash = hash * 31 + p.GetShredderCount().GetHashCode();
+            hash = hash * 31 + p.GetShredderDamage().GetHashCode();
+            hash = hash * 31 + p.GetShredderRange().GetHashCode();
+            hash = hash * 31 + p.GetPenBounce().GetHashCode();
+            hash = hash * 31 + p.GetPenPierce().GetHashCode();
+            hash = hash * 31 + p.GetBladeBounce().GetHashCode();
             hash = hash * 31 + p.Health.GetHashCode();
             hash = hash * 31 + p.MaxHealth.GetHashCode();
         }
@@ -123,6 +134,11 @@
         public string Speed { get; set; }
         public string Range { get; set; }
         public string SplitCount { get; set; }
-        public string MoveSpeed { get; set; }
+        public string ShredderCount { get; set; }
+        public string ShredderDamage { get; set; }
+        public string ShredderRange { get; set; }
+        public string PenBounce { get; set; }
+        public string PenPierce { get; set; }
+        public string BladeBounce { get; set; }
     }
 }

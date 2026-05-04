@@ -34,6 +34,42 @@ public sealed class ArrowPlayer : Component
 	[Property, Category( "Combat" )]
 	public float ArrowDistance { get; set; } = 800f;
 
+	[Property, Category( "Models" ), Title( "Pen Model" )]
+	public Model PenModel { get; set; }
+
+	[Property, Category( "Models" ), Title( "Pen Scale" )]
+	public Vector3 PenScale { get; set; } = new Vector3( 2f, 0.25f, 0.25f );
+
+	[Property, Category( "Models" ), Title( "Blade Model" )]
+	public Model BladeModel { get; set; }
+
+	[Property, Category( "Models" ), Title( "Blade Scale" )]
+	public Vector3 BladeScale { get; set; } = new Vector3( 1.5f, 0.1f, 3f );
+
+	[Property, Category( "Audio" ), Title( "Pen Throw Sound" )]
+	public SoundEvent PenFireSound { get; set; }
+
+	[Property, Category( "Audio" ), Title( "Pen Throw Volume" ), Range( 0, 1, 0.05f )]
+	public float PenFireVolume { get; set; } = 1f;
+
+	[Property, Category( "Audio" ), Title( "Pen Hit Sound" )]
+	public SoundEvent PenHitSound { get; set; }
+
+	[Property, Category( "Audio" ), Title( "Pen Hit Volume" ), Range( 0, 1, 0.05f )]
+	public float PenHitVolume { get; set; } = 1f;
+
+	[Property, Category( "Audio" ), Title( "Scissor Launch Sound" )]
+	public SoundEvent ScissorLaunchSound { get; set; }
+
+	[Property, Category( "Audio" ), Title( "Scissor Launch Volume" ), Range( 0, 1, 0.05f )]
+	public float ScissorLaunchVolume { get; set; } = 1f;
+
+	[Property, Category( "Audio" ), Title( "Scissor Hit Sound" )]
+	public SoundEvent ScissorHitSound { get; set; }
+
+	[Property, Category( "Audio" ), Title( "Scissor Hit Volume" ), Range( 0, 1, 0.05f )]
+	public float ScissorHitVolume { get; set; } = 1f;
+
 	#endregion
 
 	#region State
@@ -44,6 +80,9 @@ public sealed class ArrowPlayer : Component
 	private UpgradeManager _um;
 	private TimeSince _timeSinceLastFire = 0;
 	private PlayerController _pc;
+	private List<PaperShredderBlade> _shredderBlades = new();
+	private TimeSince _timeSinceBurst = 0;
+	private float _burstCooldown = 2f;
 
 	#endregion
 
@@ -180,6 +219,13 @@ public sealed class ArrowPlayer : Component
 		pos.x = pos.x.Clamp( LaneMinX, LaneMaxX );
 		WorldPosition = pos;
 
+		// --- Sync shredder blades ---
+		if ( Networking.IsHost )
+		{
+			SyncShredders();
+			HandleShredderBurst();
+		}
+
 		// --- Auto-fire ---
 		var effectiveFireRate = PlaystyleBaseFireRate + GetFireRateBonus();
 		var interval = 1.0f / effectiveFireRate;
@@ -187,13 +233,13 @@ public sealed class ArrowPlayer : Component
 		if ( _timeSinceLastFire >= interval )
 		{
 			_timeSinceLastFire = 0;
-			FireArrow();
+			ThrowPen();
 		}
 	}
 
 	#region Combat
 
-	private void FireArrow()
+	private void ThrowPen()
 	{
 		var count = GetSplitCount();
 		var baseAngle = -90f;
@@ -202,28 +248,46 @@ public sealed class ArrowPlayer : Component
 
 		for ( int i = 0; i <= count; i++ )
 		{
-			SpawnSingleArrow( baseAngle + startAngle + i * spread );
+			SpawnPen( baseAngle + startAngle + i * spread );
 		}
 	}
 
-	private void SpawnSingleArrow( float yaw )
+	private void SpawnPen( float yaw )
 	{
-		var arrowGo = new GameObject( true, $"Arrow_{GameObject.Name}" );
-		arrowGo.WorldPosition = WorldPosition + Rotation.FromYaw( yaw ).Forward * 30f;
-		arrowGo.WorldRotation = Rotation.FromYaw( yaw );
+		var penGo = new GameObject( true, $"Pen_{GameObject.Name}" );
+		penGo.WorldPosition = WorldPosition + Rotation.FromYaw( yaw ).Forward * 30f;
+		penGo.WorldRotation = Rotation.FromYaw( yaw );
 
-		var arrow = arrowGo.Components.Create<Arrow>();
-		arrow.Speed = PlaystyleArrowSpeed + GetSpeedBonus();
-		arrow.Damage = PlaystyleArrowDamage + GetDamageBonus();
-		arrow.MaxDistance = PlaystyleArrowDistance + GetDistanceBonus();
-		arrow.OwnerId = Network.OwnerId;
-		arrow.SplitCount = 0;
+		var pen = penGo.Components.Create<Pen>();
+		pen.Speed = PlaystyleArrowSpeed + GetSpeedBonus();
+		pen.Damage = PlaystyleArrowDamage + GetDamageBonus();
+		pen.MaxDistance = PlaystyleArrowDistance + GetDistanceBonus();
+		pen.OwnerId = Network.OwnerId;
+		pen.SplitCount = 0;
+		pen.BounceCount = GetPenBounce();
+		pen.PierceCount = GetPenPierce();
 
-		var model = arrowGo.Components.Create<ModelRenderer>();
-		model.Model = Model.Cube;
-		arrowGo.LocalScale = new Vector3( 2f, 0.25f, 0.25f );
+		var model = penGo.Components.Create<ModelRenderer>();
+		model.Model = PenModel ?? Model.Cube;
+		penGo.LocalScale = PenScale;
 		model.Tint = GetPlayerColor();
-		arrowGo.NetworkSpawn( null );
+
+		// Pass audio references to the pen
+		var penComponent = penGo.Components.Get<Pen>();
+		if ( penComponent.IsValid() )
+		{
+			penComponent.HitSound = PenHitSound;
+			penComponent.HitVolume = PenHitVolume;
+		}
+
+		// Play pen throw sound
+		if ( PenFireSound is not null )
+		{
+			var handle = Sound.Play( PenFireSound, WorldPosition );
+			handle.Volume = PenFireVolume;
+		}
+
+		penGo.NetworkSpawn( null );
 	}
 
 	public void TakeDamage( float damage, Guid attackerId )
@@ -245,6 +309,9 @@ public sealed class ArrowPlayer : Component
 		IsDead = true;
 		Log.Info( $"{GameObject.Name} has died." );
 
+		// Destroy shredder blades
+		CleanupShredders();
+
 		// Notify GameManager
 		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
 		gm?.OnPlayerDied( this );
@@ -260,13 +327,162 @@ public sealed class ArrowPlayer : Component
 
 	#endregion
 
+	#region Card Upgrades (Unique)
+
+	public int GetPenBounce()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 0;
+		return _um.CurrentUpgrades.PenBounce;
+	}
+
+	public int GetPenPierce()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 0;
+		return _um.CurrentUpgrades.PenPierce;
+	}
+
+	public int GetBladeBounce()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 0;
+		return _um.CurrentUpgrades.BladeBounce;
+	}
+
+	#endregion
+
+	#region Shredders
+
+	public int GetShredderCount()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 0;
+		return _um.CurrentUpgrades.SwordCount;
+	}
+
+	public float GetShredderDamage()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 10f;
+		return 10f + _um.CurrentUpgrades.SwordDamage * 8f;
+	}
+
+	public int GetShredderRange()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 600;
+		return 600 + _um.CurrentUpgrades.SwordRange * 100;
+	}
+
+	private void HandleShredderBurst()
+	{
+		// Only fire burst when all blades are idle (orbiting)
+		bool allIdle = true;
+		foreach ( var blade in _shredderBlades )
+		{
+			if ( !blade.IsValid() || !blade.IsIdle )
+			{
+				allIdle = false;
+				break;
+			}
+		}
+		if ( _shredderBlades.Count == 0 ) allIdle = false;
+
+		// Wait for cooldown
+		var cooldown = Math.Max( 0.3f, _burstCooldown - _um.CurrentUpgrades.SwordFrequency * 0.2f );
+		if ( !allIdle || _timeSinceBurst < cooldown ) return;
+
+		// Find nearest enemy
+		Enemy nearest = null;
+		float nearestDist = GetShredderRange(); // max burst range
+		foreach ( var enemy in Scene.GetAllComponents<Enemy>() )
+		{
+			if ( !enemy.IsAlive ) continue;
+			var dist = WorldPosition.Distance( enemy.WorldPosition );
+			if ( dist < nearestDist )
+			{
+				nearestDist = dist;
+				nearest = enemy;
+			}
+		}
+
+		if ( nearest == null ) return; // no enemies to burst at
+
+		// Burst fire — launch ALL blades at nearest enemy simultaneously
+		foreach ( var blade in _shredderBlades )
+		{
+			if ( blade.IsValid() )
+				blade.BurstLaunch( nearest.GameObject );
+		}
+		_timeSinceBurst = 0;
+	}
+
+	private void SyncShredders()
+	{
+		var target = GetShredderCount();
+		// Spawn blades up to target
+		while ( _shredderBlades.Count < target )
+		{
+			SpawnShredder( _shredderBlades.Count );
+		}
+		// Remove excess blades
+		while ( _shredderBlades.Count > target && _shredderBlades.Count > 0 )
+		{
+			var last = _shredderBlades[^1];
+			if ( last.IsValid() )
+				last.GameObject.Destroy();
+			_shredderBlades.RemoveAt( _shredderBlades.Count - 1 );
+		}
+		// Recalculate even spacing for all remaining blades
+		var count = _shredderBlades.Count;
+		for ( int i = 0; i < count; i++ )
+		{
+			if ( _shredderBlades[i].IsValid() )
+				_shredderBlades[i].OrbitAngle = (360f / count) * i;
+		}
+	}
+
+	private void SpawnShredder( int index )
+	{
+		var go = new GameObject( true, $"Shredder_{GameObject.Name}_{index}" );
+		go.WorldPosition = WorldPosition;
+
+		var blade = go.Components.Create<PaperShredderBlade>();
+		blade.OrbitAngle = (360f / Math.Max( 1, GetShredderCount() )) * index;
+		blade.Damage = GetShredderDamage();
+		blade.BladeBounce = GetBladeBounce();
+		blade.OwnerId = Network.OwnerId;
+var model = go.Components.Create<ModelRenderer>();
+model.Model = BladeModel ?? Model.Cube;
+go.LocalScale = Vector3.One;
+
+model.Tint = new Color( 0.55f, 0.55f, 0.65f );
+
+// Pass audio references to the blade
+blade.HitSound = ScissorHitSound;
+blade.HitVolume = ScissorHitVolume;
+blade.LaunchSound = ScissorLaunchSound;
+blade.LaunchVolume = ScissorLaunchVolume;
+
+go.NetworkSpawn( null );
+_shredderBlades.Add( blade );
+	}
+
+	private void CleanupShredders()
+	{
+		foreach ( var blade in _shredderBlades )
+		{
+			if ( blade.IsValid() )
+				blade.GameObject.Destroy();
+		}
+		_shredderBlades.Clear();
+	}
+
+	#endregion
+
 	#region Upgrades
 
 	public int GetSplitCount()
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
 		if ( !_um.CurrentUpgrades.PlaystyleLocked ) return 0;
-		return _um.CurrentUpgrades.ChosenPlaystyle == Playstyle.SplitShot ? 2 + _um.CurrentUpgrades.ArrowDistance : 0;
+		var splitBase = _um.CurrentUpgrades.ChosenPlaystyle == Playstyle.SplitShot ? 2 : 0;
+		return splitBase + _um.CurrentUpgrades.SplitCount;
 	}
 
 	public float EffectiveFireRate => PlaystyleBaseFireRate + GetFireRateBonus();
@@ -303,11 +519,6 @@ public sealed class ArrowPlayer : Component
 		return _um.CurrentUpgrades.ArrowDistance * 200f;
 	}
 
-	public float GetMoveSpeedBonus()
-	{
-		if ( _um?.CurrentUpgrades == null ) return 0;
-		return _um.CurrentUpgrades.MovementSpeed * 50f;
-	}
 
 	#endregion
 

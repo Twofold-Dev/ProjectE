@@ -244,39 +244,49 @@
 
     private string GetPlaystyleDesc( Playstyle ps ) => ps switch
     {
-        Playstyle.RapidFire => "Spam paper planes!\n3 shots/sec\nLow damage each",
-        Playstyle.SplitShot => "Paper chain split!\n3 planes per shot\nScreen coverage",
-        Playstyle.PowerShot => "Heavy stapler shot!\n1 shot every 2s\nMassive damage",
+        Playstyle.RapidFire => "Spam throw pens!\n3 pens/sec\nLow damage each",
+        Playstyle.SplitShot => "Pen split!\n3 pens per throw\nScreen coverage",
+        Playstyle.PowerShot => "Heavy pen toss!\n1 pen every 2s\nMassive damage",
         _ => "",
     };
 
     private string GetName( UpgradeType t ) => t switch
     {
-        UpgradeType.ArrowFrequency => "Coffee Rush",
-        UpgradeType.ArrowDamage => "Stapler Power",
-        UpgradeType.ArrowSpeed => "Aerodynamics",
-        UpgradeType.ArrowDistance => "Paper Stream",
-        UpgradeType.SwordCount => "Paper Shredders",
-        UpgradeType.SwordDamage => "Fresh Blades",
-        UpgradeType.PetCount => "Desk Buddies",
-        UpgradeType.PetFireRate => "Busy Buddies",
-        UpgradeType.MovementSpeed => "Office Chair",
-        UpgradeType.HealthBoost => "Sick Days",
+        UpgradeType.ArrowFrequency => "Fire Rate",
+        UpgradeType.ArrowDamage => "Damage",
+        UpgradeType.ArrowSpeed => "Proj Speed",
+        UpgradeType.ArrowDistance => "Range",
+        UpgradeType.SwordCount => "Scissors",
+        UpgradeType.SwordDamage => "Scissor Dmg",
+        UpgradeType.PetCount => "Pets",
+        UpgradeType.PetFireRate => "Pet Rate",
+        UpgradeType.SwordFrequency => "Burst Spd",
+        UpgradeType.SwordRange => "Scissor Rng",
+        UpgradeType.SplitCount => "Pen +X",
+        UpgradeType.PenBounce => "Bouncing Pens",
+        UpgradeType.PenPierce => "Piercing Pens",
+        UpgradeType.BladeBounce => "Blade Bounce",
+        UpgradeType.HealthBoost => "Health",
         _ => t.ToString(),
     };
 
     private string GetDesc( UpgradeType t ) => t switch
     {
-        UpgradeType.ArrowFrequency => "More coffee = faster firing!\n+0.3 shots/sec",
-        UpgradeType.ArrowDamage => "Heavy-duty stapling!\n+5 damage per hit",
-        UpgradeType.ArrowSpeed => "Better paper plane folds!\n+100 speed",
-        UpgradeType.ArrowDistance => "Longer paper trail!\n+200 range",
-        UpgradeType.SwordCount => "Extra shredding blades!\n+1 orbiting shredder",
-        UpgradeType.SwordDamage => "Sharper shredder teeth!\n+8 shredder damage",
-        UpgradeType.PetCount => "More office friends!\n+1 desk buddy",
-        UpgradeType.PetFireRate => "Buddies work OT!\n+0.5 buddy attacks/sec",
-        UpgradeType.MovementSpeed => "Upgraded chair wheels!\n+50 move speed",
-        UpgradeType.HealthBoost => "Banked sick leave!\n+20 HP, heal",
+        UpgradeType.ArrowFrequency => "+0.3 pens/sec",
+        UpgradeType.ArrowDamage => "+5 damage per pen",
+        UpgradeType.ArrowSpeed => "+100 proj speed",
+        UpgradeType.ArrowDistance => "+200 range",
+        UpgradeType.SwordCount => "+1 scissor blade",
+        UpgradeType.SwordDamage => "+8 scissor damage",
+        UpgradeType.PetCount => "+1 pet companion",
+        UpgradeType.PetFireRate => "+0.5 pet attacks/sec",
+        UpgradeType.SwordFrequency => "+1 cd down",
+        UpgradeType.SwordRange => "+1 scissor range",
+        UpgradeType.SplitCount => "+1 pen split",
+        UpgradeType.PenBounce => "+1 wall bounce",
+        UpgradeType.PenPierce => "+1 enemy pierce",
+        UpgradeType.BladeBounce => "+1 blade bounce",
+        UpgradeType.HealthBoost => "+20 HP, heal",
         _ => "",
     };
 

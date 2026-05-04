@@ -73,9 +73,14 @@ public sealed class UpgradeManager : Component
 		if ( state.ArrowDistance < 10 ) available.Add( UpgradeType.ArrowDistance );
 		if ( state.SwordCount < 8 ) available.Add( UpgradeType.SwordCount );
 		if ( state.SwordDamage < 10 ) available.Add( UpgradeType.SwordDamage );
+		if ( state.SwordFrequency < 10 ) available.Add( UpgradeType.SwordFrequency );
+		if ( state.SwordRange < 10 ) available.Add( UpgradeType.SwordRange );
+		if ( state.SplitCount < 10 ) available.Add( UpgradeType.SplitCount );
 		if ( state.PetCount < 6 ) available.Add( UpgradeType.PetCount );
 		if ( state.PetFireRate < 8 ) available.Add( UpgradeType.PetFireRate );
-		if ( state.MovementSpeed < 10 ) available.Add( UpgradeType.MovementSpeed );
+		if ( state.PenBounce < 5 ) available.Add( UpgradeType.PenBounce );
+		if ( state.PenPierce < 5 ) available.Add( UpgradeType.PenPierce );
+		if ( state.BladeBounce < 5 ) available.Add( UpgradeType.BladeBounce );
 		if ( state.HealthBoost < 10 ) available.Add( UpgradeType.HealthBoost );
 
 		return available;
