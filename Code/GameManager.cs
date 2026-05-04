@@ -17,16 +17,33 @@ public sealed class GameManager : Component
 	[Sync] public int CurrentWave { get; set; } = 0;
 	[Sync] public int TotalScore { get; set; } = 0;
 	[Sync] public bool PlaystyleChosen { get; set; } = false;
+	[Sync] public bool IsReady { get; set; } = false;
 
 	[Property, Category( "Gates" ), Title( "Gate Model" )]
 	public Model GateModel { get; set; }
+
+	[Property]
+	public string GameScenePath { get; set; } = "assets/scenes/arrow_game.scene";
 
 	protected override void OnStart()
 	{
 		if ( Networking.IsHost )
 		{
 			Log.Info( "GameManager started (host)" );
+		}
+	}
+
+	[Rpc.Host]
+	public void ToggleReady()
+	{
+		IsReady = !IsReady;
+		Log.Info( $"Ready: {IsReady}" );
+		if ( IsReady )
+		{
 			State = GameState.Playing;
+			Log.Info( "Starting game!" );
+			if ( !string.IsNullOrEmpty( GameScenePath ) )
+				Scene.LoadFromFile( GameScenePath );
 		}
 	}
 

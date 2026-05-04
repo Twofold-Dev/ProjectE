@@ -23,6 +23,8 @@ public sealed class HudManager : Component
 		// Add our PanelComponent panels
 		_uiRoot.AddComponent<Sandbox.UI.GameHud>();
 		_uiRoot.AddComponent<Sandbox.UI.UpgradePanel>();
+		_uiRoot.AddComponent<Sandbox.UI.GameOverPanel>();
+		_uiRoot.AddComponent<Sandbox.UI.LobbyPanel>();
 
 		Log.Info( "HudManager: UI created" );
 	}

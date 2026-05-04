@@ -1,0 +1,168 @@
+@* Game Over screen — shown when all players die. *@
+@namespace Sandbox.UI
+@inherits PanelComponent
+
+<root>
+    @if ( IsVisible )
+    {
+        <div class="gameover-overlay">
+            <div class="gameover-title">Game Over</div>
+            <div class="gameover-wave">Reached Wave @Wave</div>
+            <div class="gameover-score">Final Score: @Score</div>
+            <div class="gameover-players">
+                @foreach ( var entry in PlayerStats )
+                {
+                    <div class="gameover-player @entry.Side">
+                        <div class="gameover-player-name">@entry.Name</div>
+                        <div class="gameover-player-score">Score: @entry.Score</div>
+                        <div class="gameover-player-wave">Wave: @entry.Wave</div>
+                    </div>
+                }
+            </div>
+            <div class="gameover-button-wrap">
+                <div class="gameover-button" @onclick="OnPlayAgain">Back to Lobby</div>
+            </div>
+        </div>
+    }
+</root>
+
+<style>
+    GameOverPanel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+    }
+    .gameover-overlay {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #000000cc;
+        gap: 16px;
+        pointer-events: all;
+    }
+    .gameover-title {
+        font-size: 72px;
+        color: #ff4444;
+        font-weight: bold;
+        text-shadow: 4px 4px 0px #000;
+        margin-bottom: 8px;
+    }
+    .gameover-wave {
+        font-size: 28px;
+        color: #ffcc44;
+        font-weight: bold;
+        text-shadow: 2px 2px 0px #000;
+    }
+    .gameover-score {
+        font-size: 36px;
+        color: white;
+        font-weight: bold;
+        text-shadow: 2px 2px 0px #000;
+    }
+    .gameover-players {
+        display: flex;
+        flex-direction: row;
+        gap: 40px;
+        margin: 16px 0;
+    }
+    .gameover-player {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 16px 32px;
+        background: #00000080;
+        border-radius: 8px;
+    }
+    .gameover-player-name {
+        font-size: 24px;
+        color: #88ddff;
+        font-weight: bold;
+    }
+    .gameover-player-score, .gameover-player-wave {
+        font-size: 18px;
+        color: #ccccee;
+    }
+    .gameover-button-wrap {
+        margin-top: 16px;
+    }
+    .gameover-button {
+        padding: 12px 48px;
+        font-size: 28px;
+        color: white;
+        font-weight: bold;
+        background: linear-gradient(145deg, #336633, #224422);
+        border: 2px solid #66aa66;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .gameover-button:hover {
+        transform: scale(1.05);
+        background: linear-gradient(145deg, #448844, #336633);
+    }
+</style>
+
+@code {
+    private GameManager _gm;
+    private List<PlayerGameOverEntry> PlayerStats = new();
+
+    public bool IsVisible { get; set; } = false;
+    public int Score => _gm?.TotalScore ?? 0;
+    public int Wave => _gm?.CurrentWave ?? 0;
+
+    protected override void OnUpdate()
+    {
+        if ( _gm == null )
+            _gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+
+        var shouldShow = _gm != null && _gm.State == GameManager.GameState.GameOver;
+        if ( IsVisible != shouldShow )
+        {
+            IsVisible = shouldShow;
+            if ( shouldShow )
+                RefreshStats();
+        }
+    }
+
+    private void RefreshStats()
+    {
+        PlayerStats.Clear();
+        int idx = 0;
+        foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
+        {
+            PlayerStats.Add( new PlayerGameOverEntry
+            {
+                Name = $"Player {idx + 1}",
+                Side = idx == 0 ? "left" : "right",
+                Score = _gm?.TotalScore ?? 0,
+                Wave = _gm?.CurrentWave ?? 0,
+            } );
+            idx++;
+        }
+    }
+
+    private void OnPlayAgain()
+    {
+        Scene.LoadFromFile( "assets/scenes/minimal.scene" );
+    }
+
+    protected override int BuildHash()
+    {
+        return System.HashCode.Combine( IsVisible, Score, Wave, PlayerStats.Count );
+    }
+
+    public class PlayerGameOverEntry
+    {
+        public string Name { get; set; }
+        public string Side { get; set; }
+        public int Score { get; set; }
+        public int Wave { get; set; }
+    }
+}
