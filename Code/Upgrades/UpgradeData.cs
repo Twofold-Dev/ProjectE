@@ -48,7 +48,7 @@ public sealed class UpgradeState
 	public int PenBounce { get; set; } = 0;
 	public int PenPierce { get; set; } = 0;
 	public int BladeBounce { get; set; } = 0;
-	public int PetCount { get; set; } = 0;
+	public int PetCount { get; set; } = 1;
 	public int PetFireRate { get; set; } = 0;
 	public int HealthBoost { get; set; } = 0;
 

@@ -18,6 +18,9 @@ public sealed class GameManager : Component
 	[Sync] public int TotalScore { get; set; } = 0;
 	[Sync] public bool PlaystyleChosen { get; set; } = false;
 
+	[Property, Category( "Gates" ), Title( "Gate Model" )]
+	public Model GateModel { get; set; }
+
 	protected override void OnStart()
 	{
 		if ( Networking.IsHost )

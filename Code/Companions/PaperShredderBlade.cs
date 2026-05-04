@@ -19,6 +19,7 @@ public sealed class PaperShredderBlade : Component
 	[Property] public float LaunchVolume { get; set; } = 1f;
 	[Property] public SoundEvent HitSound { get; set; }
 	[Property] public float HitVolume { get; set; } = 1f;
+	[Property] public string MixerTarget { get; set; } = "Game";
 
 	#endregion
 

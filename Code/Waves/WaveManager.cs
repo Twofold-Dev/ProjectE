@@ -194,29 +194,42 @@ public sealed class WaveManager : Component
 		enemyGo.WorldPosition = spawnPos;
 		enemyGo.WorldRotation = Rotation.FromYaw( 90f );
 
+		// Calculate dynamic HP based on player DPS (factoring in range)
+		float totalPlayerDPS = 0f;
+		int playerCount = 0;
+		foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
+		{
+			totalPlayerDPS += p.GetCurrentDPS( SpawnDistance );
+			playerCount++;
+		}
+		float avgDPS = playerCount > 0 ? totalPlayerDPS / playerCount : 30f;
+
+		// Target TTK = 1.5s, hit buffer = 1.3x (can miss ~23% of shots)
+		float baseDynamicHP = avgDPS * 1.5f * 1.3f;
+
 		Enemy enemy;
 
 		// Determine enemy type based on wave difficulty
 		if ( CurrentWave % SubBossInterval == 0 && CurrentWave > 0 && _enemiesSpawnedThisWave == _targetEnemyCount - 1 )
 		{
-			// Sub-boss: spawns as the last enemy of the wave
 			enemy = CreateBossEnemy( enemyGo );
+			enemy.BaseHealth = baseDynamicHP * 5f; // bosses take 5x longer
 		}
 		else if ( CurrentWave >= FinalBossWave && _enemiesSpawnedThisWave == _targetEnemyCount - 1 )
 		{
-			// Final boss
 			enemy = CreateBossEnemy( enemyGo );
-			enemy.BaseHealth *= 3f;
+			enemy.BaseHealth = baseDynamicHP * 8f;
 			enemy.ScoreValue *= 5;
 		}
 		else
 		{
-			// Random regular enemy type
 			enemy = CreateRandomEnemy( enemyGo );
+			// Type-specific HP multiplier: Fast=0.6x, Tank=3x, Basic=1x
+			float typeMult = enemy is FastEnemy ? 0.6f : enemy is TankEnemy ? 3f : 1f;
+			enemy.BaseHealth = baseDynamicHP * typeMult;
 		}
 
-		// Apply difficulty scaling
-		enemy.BaseHealth *= MathF.Pow( HealthScale, CurrentWave - 1 );
+		// Speed scales slightly with wave
 		enemy.Speed *= MathF.Pow( SpeedScale, CurrentWave - 1 );
 
 		// Visual: use assigned model or cube placeholder
@@ -329,16 +342,18 @@ public sealed class WaveManager : Component
 
 	private void SpawnUpgradeGate()
 	{
-		// 2 gates at fixed X positions
-		float[] gatePositions = { 100f, -200f };
-		// 6 gate categories: DAMAGE, FIRE RATE, PEN+X, CD DOWN, BLADE+X, RANGE
+		// 3 gates spanning the lane
+		float[] gatePositions = { 133f, 0f, -133f };
+		// Gate types — HealthBoost appears twice for increased spawn chance
 		UpgradeType[] gateTypes = {
-			UpgradeType.ArrowDamage,    // DAMAGE gate
-			UpgradeType.ArrowFrequency, // FIRE RATE gate
-			UpgradeType.SplitCount,     // PEN+X gate
-			UpgradeType.SwordFrequency, // CD DOWN gate
-			UpgradeType.SwordCount,     // BLADE+X gate
-			UpgradeType.ArrowDistance,  // RANGE gate
+			UpgradeType.ArrowDamage,
+			UpgradeType.ArrowFrequency,
+			UpgradeType.SplitCount,
+			UpgradeType.SwordFrequency,
+			UpgradeType.SwordCount,
+			UpgradeType.ArrowDistance,
+			UpgradeType.HealthBoost, // extra chance
+			UpgradeType.HealthBoost, // extra chance
 		};
 
 		for ( int i = 0; i < gatePositions.Length; i++ )
@@ -351,8 +366,8 @@ public sealed class WaveManager : Component
 			var gateGo = new GameObject( true, $"Gate_{type}_{i}" );
 			var spawnY = GetPlayerY() - SpawnDistance;
 			gateGo.WorldPosition = new Vector3( gatePositions[i], spawnY, 0 );
-			gateGo.WorldRotation = Rotation.From( 0, 0, -90 );
-			gateGo.LocalScale = Vector3.One;
+			gateGo.WorldRotation = Rotation.From( 0, 90, 0 );
+			gateGo.LocalScale = new Vector3( 1.5f, 1.5f, 1.5f );
 
 			var gate = gateGo.Components.Create<UpgradeGate>();
 			gate.UpgradeType = type;
@@ -360,17 +375,27 @@ public sealed class WaveManager : Component
 			gate.DisplayName = displayName;
 			gate.AmountText = amountText;
 
+			// Use GameManager's gate model if set
+			var gateModel = _gm?.GateModel ?? Model.Plane;
 			var model = gateGo.Components.Create<ModelRenderer>();
-			model.Model = Model.Plane;
-			model.Tint = GetGateColor( type );
+			model.Model = gateModel;
+			if ( _gm?.GateModel is null )
+				model.Tint = GetGateColor( type ); // only tint if using fallback plane
 
 			var col = gateGo.Components.Create<BoxCollider>();
-			col.IsTrigger = true;
+			col.Center = new Vector3( 1.795f, 31.593f, 35.45f );
+			col.Scale = new Vector3( 17.755f, 63.07f, 65.20f );
+
+			// Physics so players can push through
+			var body = gateGo.Components.Create<Rigidbody>();
+			body.MotionEnabled = true;
+			body.Gravity = true;
+			body.MassOverride = 50f;
 
 			// Label — same sizing as enemy HP panel
 			var labelGo = new GameObject( true, "GateLabel" );
 			labelGo.Parent = gateGo;
-			labelGo.LocalPosition = Vector3.Zero;
+			labelGo.LocalPosition = new Vector3( 0, 30, 0 );
 			labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
 			var wp = labelGo.Components.Create<WorldPanel>();
 			wp.PanelSize = new Vector2( 1200, 300 );
@@ -410,16 +435,25 @@ public sealed class WaveManager : Component
 		gate.DisplayName = GetGateDisplayName( type );
 		gate.AmountText = GetAmountText( type, amount );
 
+		// Use GameManager's gate model if set
 		var model = go.Components.Create<ModelRenderer>();
-		model.Model = Model.Plane;
-		model.Tint = GetGateColor( type );
+		model.Model = _gm?.GateModel ?? Model.Plane;
+		if ( _gm?.GateModel is null )
+			model.Tint = GetGateColor( type );
 
 		var col = go.Components.Create<BoxCollider>();
-		col.IsTrigger = true;
+		col.Center = Vector3.Zero;
+		col.Scale = new Vector3( 20f, 20f, 40f );
+
+		// Physics so players can push through
+		var body = go.Components.Create<Rigidbody>();
+		body.MotionEnabled = true;
+		body.Gravity = true;
+		body.MassOverride = 30f;
 
 		var labelGo = new GameObject( true, "DropLabel" );
 		labelGo.Parent = go;
-		labelGo.LocalPosition = Vector3.Zero;
+		labelGo.LocalPosition = new Vector3( 0, 30, 0 );
 		labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
 		var wp = labelGo.Components.Create<WorldPanel>();
 		wp.PanelSize = new Vector2( 1200, 300 );
@@ -435,16 +469,16 @@ public sealed class WaveManager : Component
 	{
 		return type switch
 		{
-			UpgradeType.ArrowFrequency => Random.Shared.Float( 0.2f, 0.5f ),
-			UpgradeType.ArrowDamage => Random.Shared.Int( 3, 8 ),
-			UpgradeType.ArrowSpeed => Random.Shared.Int( 50, 150 ),
-			UpgradeType.ArrowDistance => Random.Shared.Int( 100, 300 ),
-			UpgradeType.SwordCount => Random.Shared.Int( 1, 2 ),
-			UpgradeType.SwordDamage => Random.Shared.Int( 5, 12 ),
-			UpgradeType.SplitCount => Random.Shared.Int( 1, 2 ),
-			UpgradeType.SwordFrequency => Random.Shared.Int( 1, 2 ),
-			UpgradeType.SwordRange => Random.Shared.Int( 1, 2 ),
-			UpgradeType.HealthBoost => Random.Shared.Int( 15, 30 ),
+			UpgradeType.ArrowFrequency => Random.Shared.Float( 0.1f, 0.2f ),
+			UpgradeType.ArrowDamage => Random.Shared.Int( 2, 5 ),
+			UpgradeType.ArrowSpeed => Random.Shared.Int( 30, 80 ),
+			UpgradeType.ArrowDistance => Random.Shared.Int( 50, 150 ),
+			UpgradeType.SwordCount => 1,
+			UpgradeType.SwordDamage => Random.Shared.Int( 3, 8 ),
+			UpgradeType.SplitCount => 1,
+			UpgradeType.SwordFrequency => 1,
+			UpgradeType.SwordRange => 1,
+			UpgradeType.HealthBoost => Random.Shared.Int( 10, 20 ),
 			_ => 1,
 		};
 	}

@@ -13,11 +13,13 @@ public sealed class Pen : Component
 	[Property] public int PierceCount { get; set; } = 0;
 	[Property] public SoundEvent HitSound { get; set; }
 	[Property] public float HitVolume { get; set; } = 1f;
+	[Property] public string MixerTarget { get; set; } = "Game";
 
 	private Vector3 _startPosition;
 	private bool _hasHit = false;
 	private int _bouncesLeft;
 	private int _piercesLeft;
+	private HashSet<Guid> _hitEnemies = new();
 
 	protected override void OnStart()
 	{
@@ -41,7 +43,6 @@ public sealed class Pen : Component
 			{
 				pos.x = pos.x.Clamp( -200f, 200f );
 				WorldPosition = pos;
-				// Reflect X movement by inverting yaw
 				var angles = WorldRotation.Yaw();
 				WorldRotation = Rotation.FromYaw( -angles );
 				_bouncesLeft--;
@@ -64,13 +65,10 @@ public sealed class Pen : Component
 
 	private void CheckEnemyCollision()
 	{
-		_hitBuffer.Clear();
-		_hitBuffer.AddRange( Scene.GetAllComponents<Enemy>() );
-
-		foreach ( var enemy in _hitBuffer )
+		foreach ( var enemy in Scene.GetAllComponents<Enemy>() )
 		{
-			if ( !enemy.IsValid() ) continue;
-			if ( !enemy.IsAlive ) continue;
+			if ( !enemy.IsValid() || !enemy.IsAlive ) continue;
+			if ( _hitEnemies.Contains( enemy.GameObject.Id ) ) continue;
 
 			// Use enemy scale for hit radius — bigger enemies are easier to hit
 			var scale = enemy.WorldScale;
@@ -79,6 +77,7 @@ public sealed class Pen : Component
 				continue;
 
 			enemy.TakeDamage( Damage, OwnerId );
+			_hitEnemies.Add( enemy.GameObject.Id );
 
 			// Play hit sound
 			if ( HitSound is not null )
@@ -90,7 +89,7 @@ public sealed class Pen : Component
 			if ( _piercesLeft > 0 )
 			{
 				_piercesLeft--;
-				continue; // pierce through to hit more enemies
+				return; // exit loop, keep flying — will check again next frame
 			}
 
 			_hasHit = true;

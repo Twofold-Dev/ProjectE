@@ -244,9 +244,9 @@
 
     private string GetPlaystyleDesc( Playstyle ps ) => ps switch
     {
-        Playstyle.RapidFire => "Spam throw pens!\n3 pens/sec\nLow damage each",
-        Playstyle.SplitShot => "Pen split!\n3 pens per throw\nScreen coverage",
-        Playstyle.PowerShot => "Heavy pen toss!\n1 pen every 2s\nMassive damage",
+        Playstyle.RapidFire => "High fire rate (3/s)\nLow damage (6 each)\nChip damage, spray & pray",
+        Playstyle.SplitShot => "Medium rate (1.5/s)\n3 pens per throw\n7 dmg each = 21 per volley",
+        Playstyle.PowerShot => "Slow fire rate (0.6/s)\nHigh damage (30 each)\nOne-shot power",
         _ => "",
     };
 
@@ -272,12 +272,12 @@
 
     private string GetDesc( UpgradeType t ) => t switch
     {
-        UpgradeType.ArrowFrequency => "+0.3 pens/sec",
-        UpgradeType.ArrowDamage => "+5 damage per pen",
-        UpgradeType.ArrowSpeed => "+100 proj speed",
-        UpgradeType.ArrowDistance => "+200 range",
+        UpgradeType.ArrowFrequency => "+0.15 pens/sec",
+        UpgradeType.ArrowDamage => "+3 damage per pen",
+        UpgradeType.ArrowSpeed => "+50 proj speed",
+        UpgradeType.ArrowDistance => "+100 range",
         UpgradeType.SwordCount => "+1 scissor blade",
-        UpgradeType.SwordDamage => "+8 scissor damage",
+        UpgradeType.SwordDamage => "+5 scissor damage",
         UpgradeType.PetCount => "+1 pet companion",
         UpgradeType.PetFireRate => "+0.5 pet attacks/sec",
         UpgradeType.SwordFrequency => "+1 cd down",
@@ -286,7 +286,7 @@
         UpgradeType.PenBounce => "+1 wall bounce",
         UpgradeType.PenPierce => "+1 enemy pierce",
         UpgradeType.BladeBounce => "+1 blade bounce",
-        UpgradeType.HealthBoost => "+20 HP, heal",
+        UpgradeType.HealthBoost => "+15 HP, heal",
         _ => "",
     };
 

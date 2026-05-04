@@ -23,7 +23,7 @@ public sealed class ArrowPlayer : Component
 	public float BaseFireRate { get; set; } = 1.0f; // arrows per second
 
 	[Property, Category( "Combat" )]
-	public float MaxHealth { get; set; } = 100f;
+	public float MaxHealth { get; set; } = 50f;
 
 	[Property, Category( "Combat" )]
 	public float ArrowSpeed { get; set; } = 500f;
@@ -45,6 +45,15 @@ public sealed class ArrowPlayer : Component
 
 	[Property, Category( "Models" ), Title( "Blade Scale" )]
 	public Vector3 BladeScale { get; set; } = new Vector3( 1.5f, 0.1f, 3f );
+
+	[Property, Category( "Models" ), Title( "Dog Model" )]
+	public Model DogModel { get; set; }
+
+	[Property, Category( "Models" ), Title( "Dog Projectile Model" )]
+	public Model DogProjectileModel { get; set; }
+
+	[Property, Category( "Audio" ), Title( "Sound Mixer" )]
+	public string SoundMixer { get; set; } = "Game";
 
 	[Property, Category( "Audio" ), Title( "Pen Throw Sound" )]
 	public SoundEvent PenFireSound { get; set; }
@@ -70,6 +79,12 @@ public sealed class ArrowPlayer : Component
 	[Property, Category( "Audio" ), Title( "Scissor Hit Volume" ), Range( 0, 1, 0.05f )]
 	public float ScissorHitVolume { get; set; } = 1f;
 
+	[Property, Category( "Audio" ), Title( "Dog Fire Sound" )]
+	public SoundEvent DogFireSound { get; set; }
+
+	[Property, Category( "Audio" ), Title( "Dog Fire Volume" ), Range( 0, 1, 0.05f )]
+	public float DogFireVolume { get; set; } = 1f;
+
 	#endregion
 
 	#region State
@@ -81,6 +96,7 @@ public sealed class ArrowPlayer : Component
 	private TimeSince _timeSinceLastFire = 0;
 	private PlayerController _pc;
 	private List<PaperShredderBlade> _shredderBlades = new();
+	private List<DeskBuddy> _deskBuddies = new();
 	private TimeSince _timeSinceBurst = 0;
 	private float _burstCooldown = 2f;
 
@@ -131,8 +147,8 @@ public sealed class ArrowPlayer : Component
 			return _um.CurrentUpgrades.ChosenPlaystyle switch
 			{
 				Playstyle.RapidFire => 3f,
-				Playstyle.SplitShot => 2f,
-				Playstyle.PowerShot => 0.5f,
+				Playstyle.SplitShot => 1.5f,
+				Playstyle.PowerShot => 0.6f,
 				_ => 1f,
 			};
 		}
@@ -146,9 +162,9 @@ public sealed class ArrowPlayer : Component
 				return 10f;
 			return _um.CurrentUpgrades.ChosenPlaystyle switch
 			{
-				Playstyle.RapidFire => 5f,
-				Playstyle.SplitShot => 8f,
-				Playstyle.PowerShot => 25f,
+				Playstyle.RapidFire => 6f,
+				Playstyle.SplitShot => 7f,
+				Playstyle.PowerShot => 30f,
 				_ => 10f,
 			};
 		}
@@ -224,6 +240,7 @@ public sealed class ArrowPlayer : Component
 		{
 			SyncShredders();
 			HandleShredderBurst();
+			SyncBuddies();
 		}
 
 		// --- Auto-fire ---
@@ -266,6 +283,7 @@ public sealed class ArrowPlayer : Component
 		pen.SplitCount = 0;
 		pen.BounceCount = GetPenBounce();
 		pen.PierceCount = GetPenPierce();
+		Log.Info( $"Pen spawned with PierceCount={pen.PierceCount} BounceCount={pen.BounceCount}" );
 
 		var model = penGo.Components.Create<ModelRenderer>();
 		model.Model = PenModel ?? Model.Cube;
@@ -278,6 +296,7 @@ public sealed class ArrowPlayer : Component
 		{
 			penComponent.HitSound = PenHitSound;
 			penComponent.HitVolume = PenHitVolume;
+			penComponent.MixerTarget = SoundMixer;
 		}
 
 		// Play pen throw sound
@@ -312,17 +331,39 @@ public sealed class ArrowPlayer : Component
 		// Destroy shredder blades
 		CleanupShredders();
 
-		// Notify GameManager
-		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
-		gm?.OnPlayerDied( this );
-
-		// Disable the PlayerController visually / physically
 		if ( _pc.IsValid() )
 		{
+			// Create ragdoll before disabling anything
+			_pc.CreateRagdoll( $"Ragdoll_{GameObject.Name}" );
+
+			// Hide ALL model renderers on this GameObject and its children
+			foreach ( var renderer in GameObject.Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndChildren ) )
+			{
+				if ( renderer.IsValid() )
+					renderer.Enabled = false;
+			}
+			foreach ( var renderer in GameObject.Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndChildren ) )
+			{
+				if ( renderer.IsValid() )
+					renderer.Enabled = false;
+			}
+
+			// Freeze physics body completely
+			var rb = GameObject.Components.Get<Rigidbody>();
+			if ( rb.IsValid() )
+			{
+				rb.Velocity = Vector3.Zero;
+				rb.AngularVelocity = Vector3.Zero;
+				rb.MotionEnabled = false; // stop all physics simulation
+			}
+
+			// Disable the PlayerController (stops all processing)
 			_pc.Enabled = false;
 		}
 
-		// Could add ragdoll / death effects here later
+		// Notify GameManager
+		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+		gm?.OnPlayerDied( this );
 	}
 
 	#endregion
@@ -345,6 +386,81 @@ public sealed class ArrowPlayer : Component
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
 		return _um.CurrentUpgrades.BladeBounce;
+	}
+
+	#endregion
+
+	#region Buddies
+
+	public int GetBuddyCount()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 0;
+		return _um.CurrentUpgrades.PetCount;
+	}
+
+	public float GetBuddyFireRate()
+	{
+		if ( _um?.CurrentUpgrades == null ) return 1f;
+		return 1f + _um.CurrentUpgrades.PetFireRate * 0.5f;
+	}
+
+	private void SyncBuddies()
+	{
+		var target = GetBuddyCount();
+		while ( _deskBuddies.Count < target )
+		{
+			SpawnBuddy( _deskBuddies.Count, target );
+		}
+		while ( _deskBuddies.Count > target && _deskBuddies.Count > 0 )
+		{
+			var last = _deskBuddies[^1];
+			if ( last.IsValid() )
+				last.GameObject.Destroy();
+			_deskBuddies.RemoveAt( _deskBuddies.Count - 1 );
+		}
+		for ( int i = 0; i < _deskBuddies.Count; i++ )
+		{
+			if ( _deskBuddies[i].IsValid() )
+			{
+				_deskBuddies[i].BuddyIndex = i;
+				_deskBuddies[i].BuddyCount = _deskBuddies.Count;
+				_deskBuddies[i].FireRate = GetBuddyFireRate();
+			}
+		}
+	}
+
+	private void SpawnBuddy( int index, int total )
+	{
+		var go = new GameObject( true, $"Buddy_{GameObject.Name}_{index}" );
+		go.WorldPosition = WorldPosition;
+
+		var buddy = go.Components.Create<DeskBuddy>();
+		buddy.BuddyIndex = index;
+		buddy.BuddyCount = total;
+		buddy.OwnerId = Network.OwnerId;
+		buddy.FireRate = GetBuddyFireRate();
+		buddy.DogModel = DogModel;
+		buddy.FireSound = DogFireSound;
+		buddy.FireVolume = DogFireVolume;
+		buddy.ProjectileModel = DogProjectileModel;
+
+		var model = go.Components.Create<ModelRenderer>();
+		model.Model = DogModel ?? Model.Cube;
+		go.LocalScale = Vector3.One;
+		model.Tint = new Color( 0.8f, 0.6f, 0.4f );
+
+		go.NetworkSpawn( null );
+		_deskBuddies.Add( buddy );
+	}
+
+	private void CleanupBuddies()
+	{
+		foreach ( var buddy in _deskBuddies )
+		{
+			if ( buddy.IsValid() )
+				buddy.GameObject.Destroy();
+		}
+		_deskBuddies.Clear();
 	}
 
 	#endregion
@@ -458,6 +574,7 @@ blade.HitSound = ScissorHitSound;
 blade.HitVolume = ScissorHitVolume;
 blade.LaunchSound = ScissorLaunchSound;
 blade.LaunchVolume = ScissorLaunchVolume;
+blade.MixerTarget = SoundMixer;
 
 go.NetworkSpawn( null );
 _shredderBlades.Add( blade );
@@ -494,17 +611,36 @@ _shredderBlades.Add( blade );
 	public float GetFireRateBonus()
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
-		return _um.CurrentUpgrades.ArrowFrequency * 0.3f;
+		return _um.CurrentUpgrades.ArrowFrequency * 0.15f;
 	}
 
 	public float GetDamageBonus( float yawOffset = 0f )
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
-		var bonus = _um.CurrentUpgrades.ArrowDamage * 5f;
+		var bonus = _um.CurrentUpgrades.ArrowDamage * 3f;
 		// Split shot arrows deal reduced damage
 		if ( GetSplitCount() > 0 && yawOffset != 0f )
 			bonus *= 0.5f;
 		return bonus;
+	}
+
+	/// <summary>
+	/// Calculate current total effective DPS factoring in range.
+	/// Used by WaveManager to set enemy HP proportional to player damage output.
+	/// Pens that can't reach the enemy contribute reduced DPS.
+	/// </summary>
+	public float GetCurrentDPS( float spawnDistance = 800f )
+	{
+		var fireRate = EffectiveFireRate;
+		var damage = EffectiveDamage;
+		var pens = EffectiveSplitCount;
+		var baseDPS = fireRate * damage * pens;
+
+		// Factor in range: pen travel distance relative to enemy spawn distance
+		float maxDist = PlaystyleArrowDistance + GetDistanceBonus();
+		float rangeFactor = Math.Clamp( maxDist / spawnDistance, 0f, 1f );
+
+		return baseDPS * rangeFactor;
 	}
 
 	public float GetSpeedBonus()

@@ -43,7 +43,8 @@ public class Enemy : Component
 				var dist = Math.Abs( player.WorldPosition.y - WorldPosition.y );
 				if ( dist < 50f )
 				{
-					player.TakeDamage( Damage, Guid.Empty );
+					// Deal damage equal to enemy's remaining HP
+					player.TakeDamage( CurrentHealth, Guid.Empty );
 					IsAlive = false;
 					OnDeath();
 					return;

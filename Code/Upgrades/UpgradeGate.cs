@@ -24,25 +24,47 @@ public sealed class UpgradeGate : Component
 	/// </summary>
 	[Property] public string AmountText { get; set; } = "";
 
+	private bool _upgradeApplied = false;
+	private TimeSince _timeSinceApplied = 0;
+
 	protected override void OnFixedUpdate()
 	{
 		if ( !Networking.IsHost ) return;
+
+		try
+		{
+
+		if ( _upgradeApplied )
+		{
+			if ( _timeSinceApplied >= 5f )
+				GameObject.Destroy();
+			return;
+		}
+
+		if ( !GameObject.IsValid() ) return;
 
 		foreach ( var player in Scene.GetAllComponents<ArrowPlayer>() )
 		{
 			if ( player.IsDead ) continue;
 			var dist = WorldPosition.Distance( player.WorldPosition );
-			if ( dist < 50f )
+			if ( dist < 60f )
 			{
 				var um = player.GetComponent<UpgradeManager>();
 				if ( um.IsValid() )
 				{
 					ApplyUpgrade( player, um );
-					SpawnPickupText();
+					// Fly the gate label into the player as visual feedback
+					FlyLabelToPlayer( player );
+					_upgradeApplied = true;
+					_timeSinceApplied = 0;
 				}
-				GameObject.Destroy();
-				return;
+				return; // don't destroy — let physics push it around
 			}
+		}
+		}
+		catch ( System.Exception e )
+		{
+			Log.Error( $"UpgradeGate: {e.Message}" );
 		}
 	}
 
@@ -94,55 +116,69 @@ public sealed class UpgradeGate : Component
 	}
 
 	/// <summary>
-	/// Spawn a floating confirmation text that floats upward and fades.
+	/// Detach the gate's WorldPanel label and fly it into the player's body.
 	/// </summary>
-	private void SpawnPickupText()
+	private void FlyLabelToPlayer( ArrowPlayer player )
 	{
-		if ( string.IsNullOrEmpty( DisplayName ) ) return;
+		if ( !player.IsValid() ) return;
+		if ( !GameObject.IsValid() ) return;
 
-		var go = new GameObject( true, "PickupText" );
-		go.WorldPosition = WorldPosition + Vector3.Up * 20f;
-
-		// Floating label — same styling as enemy HP
-		var labelGo = new GameObject( true, "Label" );
-		labelGo.Parent = go;
-		labelGo.LocalPosition = Vector3.Zero;
-		labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
-		var wp = labelGo.Components.Create<WorldPanel>();
-		wp.PanelSize = new Vector2( 1200, 300 );
-		wp.LookAtCamera = true;
-		wp.RenderOptions.AfterUI = true;
-		var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
-		label.Text = $"{DisplayName}\n{AmountText}";
-
-		// Auto-destroy after 1.5s
-		var destroyer = go.Components.Create<FloatAndDestroy>();
-		destroyer.Lifetime = 1.5f;
-		destroyer.FloatSpeed = 30f;
-
-		go.NetworkSpawn( null );
+		// Copy children to array to avoid modifying collection during enumeration
+		var children = GameObject.Children.ToArray();
+		foreach ( var child in children )
+		{
+			if ( child.Name == "GateLabel" || child.Name == "DropLabel" || child.Name == "Label" )
+			{
+				child.SetParent( null );
+				var flyer = child.Components.Create<FlyToPlayer>();
+				flyer.Target = player.GameObject;
+				flyer.Speed = 400f;
+			}
+		}
 	}
 }
 
 /// <summary>
-/// Helper component that makes a GameObject float upward then destroy itself.
+/// Flies the label toward the player, shrinking and fading as it reaches them.
 /// </summary>
-public sealed class FloatAndDestroy : Component
+public sealed class FlyToPlayer : Component
 {
-	[Property] public float Lifetime { get; set; } = 1.5f;
-	[Property] public float FloatSpeed { get; set; } = 30f;
+	[Property] public GameObject Target { get; set; }
+	[Property] public float Speed { get; set; } = 400f;
+	[Property] public float Lifetime { get; set; } = 0.5f;
 
 	private TimeSince _timeSinceStart = 0;
+	private Sandbox.UI.GateLabel _label;
+
+	protected override void OnStart()
+	{
+		_label = Components.Get<Sandbox.UI.GateLabel>();
+		if ( !_label.IsValid() )
+		{
+			foreach ( var child in GameObject.Children )
+			{
+				_label = child.Components.Get<Sandbox.UI.GateLabel>();
+				if ( _label.IsValid() ) break;
+			}
+		}
+	}
 
 	protected override void OnFixedUpdate()
 	{
 		if ( !Networking.IsHost ) return;
+		if ( !Target.IsValid() ) { GameObject.Destroy(); return; }
 
-		WorldPosition += Vector3.Up * FloatSpeed * Time.Delta;
+		var targetPos = Target.WorldPosition;
+		var dir = ( targetPos - WorldPosition ).Normal;
+		WorldPosition += dir * Speed * Time.Delta;
 
-		if ( _timeSinceStart >= Lifetime )
-		{
+		float progress = Math.Clamp( _timeSinceStart / Lifetime, 0f, 1f );
+		if ( _label.IsValid() )
+			_label.Panel.Style.Opacity = 1f - progress;
+
+		GameObject.LocalScale = Vector3.One * (1f - progress * 0.8f);
+
+		if ( progress >= 1f || WorldPosition.Distance( targetPos ) < 20f )
 			GameObject.Destroy();
-		}
 	}
 }
