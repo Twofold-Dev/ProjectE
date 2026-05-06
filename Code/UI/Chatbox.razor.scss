@@ -1,0 +1,90 @@
+/* ═══════════════════════════════════════════
+   Chatbox — Terminal CLI Theme
+   ═══════════════════════════════════════════ */
+
+Chatbox {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 450px;
+    max-height: 110px;
+    pointer-events: none;
+    font-family: monospace;
+    font-size: 13px;
+    color: #33ff00;
+    transition: max-height 0.2s ease;
+}
+
+Chatbox.open {
+    max-height: 250px;
+    pointer-events: all;
+    background-color: rgba( 0, 0, 0, 0.6 );
+}
+
+.chat-canvas {
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    flex-grow: 1;
+    overflow-y: scroll;
+    padding: 4px;
+    gap: 2px;
+}
+
+/* Show ~2 lines of recent messages when collapsed */
+Chatbox:not(.open) .chat-canvas {
+    max-height: 70px;
+}
+Chatbox.open .chat-canvas {
+    
+}
+
+/* ── ChatEntry: flex-shrink/grow=0 prevents squashing (pizza_clicker pattern) ── */
+ChatEntry {
+    padding: 4px 8px;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    flex-shrink: 0;
+    flex-grow: 0;
+    width: 100%;
+    font-family: monospace;
+    font-size: 13px;
+    color: #33ff00;
+}
+
+ChatEntry .chat-name {
+    margin-right: 14px;
+    flex-shrink: 0;
+    font-weight: bold;
+    color: #1f7f1f;
+}
+
+ChatEntry.fade {
+    opacity: 0.3;
+}
+
+/* ── Chat input field styling ── */
+.chat-input {
+    flex-direction: row;
+    
+}
+
+.chat-input textentry {
+    background-color: rgba( 0, 0, 0, 0.7 );
+    color: #33ff00;
+    font-family: monospace;
+    font-size: 15px;
+    width: 100%;
+    padding: 10px 10px;
+    border: none;
+    opacity: 0.3;
+}
+
+Chatbox.open .chat-input textentry {
+    opacity: 1;
+    background-color: rgba( 0, 0, 0, 0.8 );
+}

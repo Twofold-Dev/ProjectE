@@ -537,15 +537,141 @@
       "Children": []
     },
     {
+      "__guid": "e2c32c9c-0599-4a6c-889c-92d1224aab50",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "office_screen_01",
+      "Position": "180.506241,-144.88472,-0.001949767",
+      "Rotation": "-1.21863513E-06,6.09826384E-06,1.88223839E-05,1",
+      "Scale": "1,0.750266314,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.Prop",
+          "__guid": "0c2cdbaf-ad31-40c4-af0f-c21b9942b345",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "Health": 0,
+          "IsStatic": false,
+          "MaterialGroup": null,
+          "Model": "models/props/trim_sheets/partitions/office_screen_01.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnPropBreak": null,
+          "OnPropTakeDamage": null,
+          "StartAsleep": false,
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "9733f446-9184-4c10-a2fa-202f4ae292de",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/props/trim_sheets/partitions/office_screen_01.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.ModelCollider",
+          "__guid": "e5e4e7de-340a-4b32-9d90-1f17f300da01",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "Model": "models/props/trim_sheets/partitions/office_screen_01.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        },
+        {
+          "__type": "Sandbox.Rigidbody",
+          "__guid": "f5c7ad54-6680-40fe-a5d7-d30a92d145cd",
+          "__enabled": true,
+          "Flags": 0,
+          "AngularDamping": 0,
+          "EnableImpactDamage": true,
+          "EnhancedCcd": false,
+          "Gravity": true,
+          "GravityScale": 1,
+          "ImpactDamage": 0,
+          "LinearDamping": 0,
+          "Locking": {
+            "X": false,
+            "Y": false,
+            "Z": false,
+            "Pitch": false,
+            "Yaw": false,
+            "Roll": false
+          },
+          "MassCenterOverride": "0,0,0",
+          "MassOverride": 4,
+          "MinImpactDamageSpeed": 500,
+          "MotionEnabled": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OverrideMassCenter": false,
+          "RigidbodyFlags": 0,
+          "StartAsleep": false
+        }
+      ],
+      "Children": []
+    },
+    {
       "__guid": "e32c269c-2c39-47d1-8c8a-a3049a91a6db",
       "__version": 2,
       "Flags": 0,
       "Name": "Player Controller",
-      "Position": "-152.797882,-91.6857605,186.32222",
+      "Position": "-129.029205,-72.4896698,118.601433",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": true,
+      "Enabled": false,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -736,7 +862,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Camera",
-          "Position": "-114.654114,-287.967255,111.468094",
+          "Position": "27.9468994,-93.6951141,12.0057831",
           "Rotation": "-0.144858196,0.286023915,0.427963108,0.845017076",
           "Scale": "1,1,1",
           "Tags": "",
@@ -969,6 +1095,102 @@
           "Children": []
         }
       ]
+    },
+    {
+      "__guid": "17b1e1fe-a580-4ea4-a9a7-07e52128452a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object",
+      "Position": "-29.7960663,-88.4797516,136.286438",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.NetworkHelper",
+          "__guid": "8a2fbc64-5e13-4843-b15c-ba029c061c3c",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "PlayerPrefab": {
+            "_type": "gameobject",
+            "go": "e32c269c-2c39-47d1-8c8a-a3049a91a6db"
+          },
+          "SpawnPoints": [
+            {
+              "_type": "gameobject",
+              "go": "934a9645-581d-4d4c-aa76-1d0f6ff794ed"
+            },
+            {
+              "_type": "gameobject",
+              "go": "3e210d27-1fcf-44e7-88c9-bf309c03f0be"
+            }
+          ],
+          "StartServer": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "934a9645-581d-4d4c-aa76-1d0f6ff794ed",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object (1)",
+      "Position": "-29.7960663,-88.4797516,136.286438",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpawnPoint",
+          "__guid": "12dd6cf0-337a-4694-aa0d-b6ea9246be2b",
+          "__enabled": true,
+          "Flags": 0,
+          "Color": "0.8902,0.31765,0.05098,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "3e210d27-1fcf-44e7-88c9-bf309c03f0be",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object (2)",
+      "Position": "-29.7960663,-88.4797516,136.286438",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -993,6 +1215,11 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
+      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "b1623711-6d50-407a-8e29-c90f4eb751e9"
@@ -1006,6 +1233,8 @@
   "ResourceVersion": 3,
   "Title": "minimal",
   "Description": null,
-  "__references": [],
+  "__references": [
+    "facepunch.office_screen_01#143469"
+  ],
   "__version": 3
 }

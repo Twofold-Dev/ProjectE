@@ -17,6 +17,11 @@ public sealed class CameraFollower : Component
 
 	protected override void OnUpdate()
 	{
+		// Don't follow during lobby/menu state
+		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+		if ( gm == null || gm.State != GameManager.GameState.Playing )
+			return;
+
 		var player = GetPlayer();
 		if ( player == null ) return;
 

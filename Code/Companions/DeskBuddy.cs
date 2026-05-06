@@ -6,7 +6,7 @@ public sealed class DeskBuddy : Component
 {
 	#region Configuration
 
-	[Property] public float FollowOffsetY { get; set; } = 50f;
+	[Property] public float FollowOffsetY { get; set; } = 30f;
 	[Property] public float FollowOffsetZ { get; set; } = 50f;
 	[Property] public float BobSpeed { get; set; } = 2f;
 	[Property] public float BobHeight { get; set; } = 5f;

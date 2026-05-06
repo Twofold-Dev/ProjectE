@@ -1,0 +1,66 @@
+@* Leaderboard panel — Terminal CLI theme, shows connected players sorted by stats. *@
+@namespace Sandbox.UI
+@inherits PanelComponent
+
+<root>
+    @{
+        var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+    }
+    @if ( gm != null )
+    {
+        var entries = gm.LeaderboardEntries
+            .OrderByDescending( e => e.HighestWave )
+            .ThenByDescending( e => e.EnemiesKilled )
+            .ToArray();
+
+        <div class="lb-overlay">
+            <div class="lb-card">
+                <div class="title-bar">+--- LEADERBOARD ----+</div>
+
+                <div class="lb-header">
+                    <div class="lb-col-rank">#</div>
+                    <div class="lb-col-name">NAME</div>
+                    <div class="lb-col-stat">WAVE</div>
+                    <div class="lb-col-stat">KILLS</div>
+                    <div class="lb-col-stat">📎</div>
+                </div>
+
+                <div class="sep">----------------------</div>
+
+                @if ( entries.Length == 0 )
+                {
+                    <div class="lb-empty">no players connected...</div>
+                }
+                else
+                {
+                    var rank = 1;
+                    foreach ( var e in entries )
+                    {
+                        var timeStr = FormatTime( e.PlayTime );
+                        <div class="lb-row @(rank == 1 ? "lb-row-top" : "")">
+                            <div class="lb-col-rank">@(rank == 1 ? "★" : $"#{rank}")</div>
+                            <div class="lb-col-name">@e.Name</div>
+                            <div class="lb-col-stat">@e.HighestWave</div>
+                            <div class="lb-col-stat">@e.EnemiesKilled</div>
+                            <div class="lb-col-stat">@e.Paperclips</div>
+                        </div>
+                        rank++;
+                    }
+                }
+
+                <div class="sep">----------------------</div>
+                <div class="status-line">users connected: @entries.Length<span class="cursor-blink">_</span></div>
+            </div>
+        </div>
+    }
+</root>
+
+@code {
+    private static string FormatTime( float seconds )
+    {
+        var ts = System.TimeSpan.FromSeconds( seconds );
+        return ts.TotalHours >= 1
+            ? $"{(int)ts.TotalHours}h {ts.Minutes}m"
+            : $"{ts.Minutes}m {ts.Seconds}s";
+    }
+}

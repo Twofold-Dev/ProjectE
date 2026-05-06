@@ -1,7 +1,7 @@
 {
-  "Title": "ProjectE",
+  "Title": "Office Runner",
   "Type": "game",
-  "Org": "local",
+  "Org": "tunadev",
   "Ident": "projecte",
   "Schema": 1,
   "IncludeSourceFiles": false,
@@ -23,6 +23,7 @@
     "PerMapRanking": false,
     "LeaderboardType": "None",
     "CsProjName": "",
-    "StartupScene": "scenes/minimal.scene"
+    "StartupScene": "scenes/lobby.scene",
+    "LaunchMode": "Normal"
   }
 }

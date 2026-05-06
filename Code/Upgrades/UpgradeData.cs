@@ -19,7 +19,7 @@ public enum UpgradeType
 	SwordFrequency,  // CD DOWN gate
 	SwordRange,
 	SplitCount,      // PEN+X gate
-	PenBounce,       // card only
+	CritChance,      // % chance to deal 2x damage
 	PenPierce,       // card only
 	BladeBounce,     // card only
 	PetCount,
@@ -40,15 +40,15 @@ public sealed class UpgradeState
 	public int ArrowDamage { get; set; } = 0;
 	public int ArrowSpeed { get; set; } = 0;
 	public int ArrowDistance { get; set; } = 0;
-	public int SwordCount { get; set; } = 1;
+	public int SwordCount { get; set; } = 0;
 	public int SwordDamage { get; set; } = 0;
 	public int SwordFrequency { get; set; } = 0;
 	public int SwordRange { get; set; } = 0;
 	public int SplitCount { get; set; } = 0;
-	public int PenBounce { get; set; } = 0;
+	public int CritChance { get; set; } = 0;
 	public int PenPierce { get; set; } = 0;
 	public int BladeBounce { get; set; } = 0;
-	public int PetCount { get; set; } = 1;
+	public int PetCount { get; set; } = 0;
 	public int PetFireRate { get; set; } = 0;
 	public int HealthBoost { get; set; } = 0;
 
@@ -68,7 +68,7 @@ public sealed class UpgradeState
 			case UpgradeType.SwordFrequency: SwordFrequency++; break;
 			case UpgradeType.SwordRange: SwordRange++; break;
 			case UpgradeType.SplitCount: SplitCount++; break;
-			case UpgradeType.PenBounce: PenBounce++; break;
+			case UpgradeType.CritChance: CritChance++; break;
 			case UpgradeType.PenPierce: PenPierce++; break;
 			case UpgradeType.BladeBounce: BladeBounce++; break;
 			case UpgradeType.PetCount: PetCount++; break;
@@ -91,7 +91,7 @@ public sealed class UpgradeState
 		UpgradeType.SwordFrequency => SwordFrequency,
 		UpgradeType.SwordRange => SwordRange,
 		UpgradeType.SplitCount => SplitCount,
-		UpgradeType.PenBounce => PenBounce,
+		UpgradeType.CritChance => CritChance,
 		UpgradeType.PenPierce => PenPierce,
 		UpgradeType.BladeBounce => BladeBounce,
 		UpgradeType.PetCount => PetCount,

@@ -20,7 +20,9 @@
                 }
             </div>
             <div class="gameover-button-wrap">
-                <div class="gameover-button" @onclick="OnPlayAgain">Back to Lobby</div>
+                <div class="gameover-button" @onclick="@(() => OnPlayAgain())">
+                    Back to Lobby
+                </div>
             </div>
         </div>
     }
@@ -150,7 +152,8 @@
 
     private void OnPlayAgain()
     {
-        Scene.LoadFromFile( "assets/scenes/minimal.scene" );
+    	var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+    	gm?.ReturnToLobby();
     }
 
     protected override int BuildHash()

@@ -92,6 +92,9 @@ public sealed class ArrowPlayer : Component
 	[Sync] public float Health { get; set; } = 100f;
 	[Sync] public bool IsDead { get; set; } = false;
 
+	/// <summary>Ready state for game scene lobby (Voxel Party pattern). Press E to toggle.</summary>
+	[Sync] public bool IsReady { get; set; } = false;
+
 	private UpgradeManager _um;
 	private TimeSince _timeSinceLastFire = 0;
 	private PlayerController _pc;
@@ -134,7 +137,34 @@ public sealed class ArrowPlayer : Component
 		// Camera: disable PlayerController camera controls — you have a static scene camera
 		_pc.UseCameraControls = false;
 
+		// Apply permanent meta-progression upgrades
+		ApplyPermanentUpgrades();
+
 		Health = MaxHealth;
+	}
+
+	private void ApplyPermanentUpgrades()
+	{
+		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+		if ( gm?.Progression == null ) return;
+
+		var shop = gm.Progression.Shop;
+
+		// Sharper Pens: +2 damage per level
+		ArrowDamage += shop.SharperPens * 2;
+
+		// Faster Firing: +0.1 fire rate per level
+		BaseFireRate += shop.FasterFiring * 0.1f;
+
+		// Armor Plating: +20 max HP per level
+		MaxHealth += shop.ArmorPlating * 20;
+
+		// Office Coffee: +5% move speed per level
+		float speedMult = 1f + shop.OfficeCoffee * 0.05f;
+		MoveSpeed *= speedMult;
+		ForwardSpeed *= speedMult;
+
+		Log.Info( $"Applied permanent upgrades: dmg={ArrowDamage}, rate={BaseFireRate}, hp={MaxHealth}, speed={MoveSpeed}" );
 	}
 
 
@@ -209,6 +239,14 @@ public sealed class ArrowPlayer : Component
 		if ( IsDead ) return;
 		if ( !_pc.IsValid() ) return;
 
+		// Don't move while in lobby/menu state
+		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+		if ( gm == null || gm.State != GameManager.GameState.Playing )
+		{
+			_pc.WishVelocity = Vector3.Zero;
+			return;
+		}
+
 		// Read W/S for lane movement: W = right, S = left
 		// Input.AnalogMove returns (x=left/right, y=forward/back, z=0)
 		// We use .y: W(forward=+1) → right(+X), S(backward=-1) → left(-X)
@@ -230,6 +268,15 @@ public sealed class ArrowPlayer : Component
 		if ( IsProxy ) return; // only the owning client fires arrows
 		if ( IsDead ) return;
 
+		// Don't run gameplay logic while in lobby/menu state
+		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+		if ( gm == null || gm.State != GameManager.GameState.Playing )
+			return;
+
+		// Toggle ready state with E (Voxel Party pattern)
+		if ( Input.Pressed( "use" ) )
+			IsReady = !IsReady;
+
 		// --- Lane clamping (X only, Y is free for forward walk) ---
 		var pos = WorldPosition;
 		pos.x = pos.x.Clamp( LaneMinX, LaneMaxX );
@@ -243,7 +290,7 @@ public sealed class ArrowPlayer : Component
 			SyncBuddies();
 		}
 
-		// --- Auto-fire ---
+		// --- Auto-fire (playstyle-modified fire rate) ---
 		var effectiveFireRate = PlaystyleBaseFireRate + GetFireRateBonus();
 		var interval = 1.0f / effectiveFireRate;
 
@@ -281,9 +328,9 @@ public sealed class ArrowPlayer : Component
 		pen.MaxDistance = PlaystyleArrowDistance + GetDistanceBonus();
 		pen.OwnerId = Network.OwnerId;
 		pen.SplitCount = 0;
-		pen.BounceCount = GetPenBounce();
+		pen.BounceCount = 0; // bounce replaced by crit
+		pen.CritChance = GetCritChance();
 		pen.PierceCount = GetPenPierce();
-		Log.Info( $"Pen spawned with PierceCount={pen.PierceCount} BounceCount={pen.BounceCount}" );
 
 		var model = penGo.Components.Create<ModelRenderer>();
 		model.Model = PenModel ?? Model.Cube;
@@ -370,10 +417,10 @@ public sealed class ArrowPlayer : Component
 
 	#region Card Upgrades (Unique)
 
-	public int GetPenBounce()
+	public int GetCritChance()
 	{
 		if ( _um?.CurrentUpgrades == null ) return 0;
-		return _um.CurrentUpgrades.PenBounce;
+		return _um.CurrentUpgrades.CritChance;
 	}
 
 	public int GetPenPierce()

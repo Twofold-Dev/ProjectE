@@ -10,6 +10,9 @@ public sealed class Pen : Component
 	[Property] public Guid OwnerId { get; set; }
 	[Property] public int SplitCount { get; set; } = 0;
 	[Property] public int BounceCount { get; set; } = 0;
+
+	/// <summary>Crit chance 0-100. On hit, roll < this → 2x damage.</summary>
+	[Property] public int CritChance { get; set; } = 0;
 	[Property] public int PierceCount { get; set; } = 0;
 	[Property] public SoundEvent HitSound { get; set; }
 	[Property] public float HitVolume { get; set; } = 1f;
@@ -76,8 +79,23 @@ public sealed class Pen : Component
 			if ( WorldPosition.Distance( enemy.WorldPosition ) > hitRadius )
 				continue;
 
-			enemy.TakeDamage( Damage, OwnerId );
+			// Crit chance: roll 0-100, if < CritChance then 2x damage
+			float finalDamage = Damage;
+			bool isCrit = CritChance > 0 && Random.Shared.Int( 0, 99 ) < CritChance;
+			if ( isCrit )
+			{
+				finalDamage = Damage * 2f;
+			}
+
+			enemy.TakeDamage( finalDamage, OwnerId );
 			_hitEnemies.Add( enemy.GameObject.Id );
+
+			// Track damage dealt for progression
+			var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+			if ( gm.IsValid() )
+			{
+				gm.RunDamageDealt += (int)finalDamage;
+			}
 
 			// Play hit sound
 			if ( HitSound is not null )

@@ -10,22 +10,20 @@
             <div class="upgrade-overlay">
                 <div class="upgrade-title">Choose Your Weapon</div>
                 <div class="upgrade-players">
-                    @for ( int i = 0; i < AllManagers.Count; i++ )
+                    @foreach ( var um in AllManagers )
                     {
-                        var um = AllManagers[i];
                         var isOwner = um.Network.IsOwner;
-                        var side = i == 0 ? "left" : "right";
+                        var side = isOwner ? "right" : "left";
                         <div class="upgrade-player-side @side">
-                            <div class="upgrade-player-name @(isOwner ? "owner" : "")">
-                                Player @(i + 1) @(isOwner ? "(You)" : "")
-                            </div>
+                            <div class="upgrade-player-name @side">@GetPlayerName(um)</div>
                             @if ( !um.HasSelected )
                             {
                                 <div class="upgrade-choices">
                                     @foreach ( var ps in playstyles )
                                     {
-                                        <div class="upgrade-card clickable"
-                                             @onclick="@(isOwner ? () => SelectPlaystyle(um, ps) : null)">
+                                        var cardClass = isOwner ? "upgrade-card clickable" : "upgrade-card disabled";
+                                        <div class="@cardClass"
+                                             @onclick="@(isOwner ? (Action)(() => SelectPlaystyle(um, ps)) : null)">
                                             <div class="upgrade-name">@GetPlaystyleName(ps)</div>
                                             <div class="upgrade-desc">@GetPlaystyleDesc(ps)</div>
                                         </div>
@@ -38,6 +36,10 @@
                                     <div class="upgrade-chosen-name">@GetPlaystyleName(um.CurrentUpgrades.ChosenPlaystyle)</div>
                                 </div>
                             }
+                            @if ( !isOwner && !um.HasSelected )
+                            {
+                                <div class="waiting-text">Waiting for @GetPlayerName(um)...</div>
+                            }
                         </div>
                     }
                 </div>
@@ -48,22 +50,20 @@
             <div class="upgrade-overlay">
                 <div class="upgrade-title">Choose an Upgrade</div>
                 <div class="upgrade-players">
-                    @for ( int i = 0; i < AllManagers.Count; i++ )
+                    @foreach ( var um in AllManagers )
                     {
-                        var um = AllManagers[i];
                         var isOwner = um.Network.IsOwner;
-                        var side = i == 0 ? "left" : "right";
+                        var side = isOwner ? "right" : "left";
                         <div class="upgrade-player-side @side">
-                            <div class="upgrade-player-name @(isOwner ? "owner" : "")">
-                                Player @(i + 1) @(isOwner ? "(You)" : "")
-                            </div>
+                            <div class="upgrade-player-name @side">@GetPlayerName(um)</div>
                             @if ( !um.HasSelected )
                             {
                                 <div class="upgrade-choices">
                                     @foreach ( var option in (um.CurrentOptions ?? new()) )
                                     {
-                                        <div class="upgrade-card @(isOwner ? "clickable" : "")"
-                                             @onclick="@(isOwner ? () => um.SelectUpgrade(option) : null)">
+                                        var cardClass = isOwner ? "upgrade-card clickable" : "upgrade-card disabled";
+                                        <div class="@cardClass"
+                                             @onclick="@(isOwner ? (Action)(() => um.SelectUpgrade(option)) : null)">
                                             <div class="upgrade-name">@GetName(option)</div>
                                             <div class="upgrade-level">Lv @GetLevel(um, option) → @(GetLevel(um, option) + 1)</div>
                                             <div class="upgrade-desc">@GetDesc(option)</div>
@@ -81,6 +81,10 @@
                                     <div class="upgrade-chosen-label">Chosen</div>
                                     <div class="upgrade-chosen-name">@GetName(um.LastSelected ?? UpgradeType.ArrowFrequency)</div>
                                 </div>
+                            }
+                            @if ( !isOwner && !um.HasSelected )
+                            {
+                                <div class="waiting-text">Waiting for @GetPlayerName(um)...</div>
                             }
                         </div>
                     }
@@ -122,6 +126,11 @@
         width: 50%;
         height: 100%;
     }
+    .upgrade-player-side.left { align-items: flex-start; padding-left: 40px; }
+    .upgrade-player-side.right { align-items: flex-end; padding-right: 40px; }
+    .upgrade-player-name { font-size: 20px; font-weight: bold; color: #88ddff; margin-bottom: 8px; }
+    .upgrade-player-name.left { color: #88ddff; }
+    .upgrade-player-name.right { color: #ffdd88; }
     .upgrade-section-title {
         font-size: 42px;
         color: white;
@@ -203,6 +212,7 @@
         if ( IsVisible != shouldShow )
         {
             IsVisible = shouldShow;
+            Log.Info( $"UpgradePanel: IsVisible={IsVisible}, State={_gm?.State}" );
         }
 
         AllManagers.Clear();
@@ -210,6 +220,7 @@
         {
             foreach ( var um in Scene.GetAllComponents<UpgradeManager>() )
             {
+                // Only offer upgrades if not already populated (avoids double-call on host)
                 if ( !ShowPlaystyleSelect && um.CurrentOptions.Count == 0 && !um.HasSelected )
                     um.OfferUpgrades();
                 AllManagers.Add( um );
@@ -219,19 +230,7 @@
 
     private void SelectPlaystyle( UpgradeManager um, Playstyle ps )
     {
-        um.CurrentUpgrades.ChosenPlaystyle = ps;
-        um.CurrentUpgrades.PlaystyleLocked = true;
-        um.HasSelected = true;
-        _gm.PlaystyleChosen = true;
-
-        if ( Networking.IsHost )
-        {
-            bool allReady = true;
-            foreach ( var u in Scene.GetAllComponents<UpgradeManager>() )
-                if ( !u.HasSelected ) { allReady = false; break; }
-            if ( allReady )
-                _gm.OnAllPlayersReady();
-        }
+        um.SelectPlaystyle( ps );
     }
 
     private string GetPlaystyleName( Playstyle ps ) => ps switch
@@ -242,11 +241,17 @@
         _ => ps.ToString(),
     };
 
+    private string GetPlayerName( UpgradeManager um )
+    {
+        var player = um.GetComponent<ArrowPlayer>();
+        return player?.GameObject.Name ?? "Player";
+    }
+
     private string GetPlaystyleDesc( Playstyle ps ) => ps switch
     {
-        Playstyle.RapidFire => "High fire rate (3/s)\nLow damage (6 each)\nChip damage, spray & pray",
-        Playstyle.SplitShot => "Medium rate (1.5/s)\n3 pens per throw\n7 dmg each = 21 per volley",
-        Playstyle.PowerShot => "Slow fire rate (0.6/s)\nHigh damage (30 each)\nOne-shot power",
+        Playstyle.RapidFire => "Fire rate: 3/s\nDamage: 6 each\nDPS: 18 — consistent chip",
+        Playstyle.SplitShot => "Fire rate: 1.5/s\n3 pens × 7 dmg = 21/volley\nSpread damage, good for groups",
+        Playstyle.PowerShot => "Fire rate: 0.6/s\nDamage: 30 each\nDPS: 18 — heavy single-target",
         _ => "",
     };
 
@@ -262,10 +267,10 @@
         UpgradeType.PetFireRate => "Pet Rate",
         UpgradeType.SwordFrequency => "Burst Spd",
         UpgradeType.SwordRange => "Scissor Rng",
-        UpgradeType.SplitCount => "Pen +X",
-        UpgradeType.PenBounce => "Bouncing Pens",
-        UpgradeType.PenPierce => "Piercing Pens",
-        UpgradeType.BladeBounce => "Blade Bounce",
+        UpgradeType.SplitCount => "Split",
+        UpgradeType.CritChance => "Crit Chance",
+        UpgradeType.PenPierce => "Piercing",
+        UpgradeType.BladeBounce => "Scissors Bounce",
         UpgradeType.HealthBoost => "Health",
         _ => t.ToString(),
     };
@@ -273,20 +278,20 @@
     private string GetDesc( UpgradeType t ) => t switch
     {
         UpgradeType.ArrowFrequency => "+0.15 pens/sec",
-        UpgradeType.ArrowDamage => "+3 damage per pen",
-        UpgradeType.ArrowSpeed => "+50 proj speed",
+        UpgradeType.ArrowDamage => "+3 dmg per pen",
+        UpgradeType.ArrowSpeed => "+100 proj speed",
         UpgradeType.ArrowDistance => "+100 range",
-        UpgradeType.SwordCount => "+1 scissor blade",
-        UpgradeType.SwordDamage => "+5 scissor damage",
+        UpgradeType.SwordCount => "+1 Scissors",
+        UpgradeType.SwordDamage => "+5 Scissor dmg",
         UpgradeType.PetCount => "+1 pet companion",
-        UpgradeType.PetFireRate => "+0.5 pet attacks/sec",
-        UpgradeType.SwordFrequency => "+1 cd down",
+        UpgradeType.PetFireRate => "+0.5 pet atk/sec",
+        UpgradeType.SwordFrequency => "+1 burst speed",
         UpgradeType.SwordRange => "+1 scissor range",
         UpgradeType.SplitCount => "+1 pen split",
-        UpgradeType.PenBounce => "+1 wall bounce",
+        UpgradeType.CritChance => "+10% crit chance",
         UpgradeType.PenPierce => "+1 enemy pierce",
-        UpgradeType.BladeBounce => "+1 blade bounce",
-        UpgradeType.HealthBoost => "+15 HP, heal",
+        UpgradeType.BladeBounce => "+1 scissors bounce",
+        UpgradeType.HealthBoost => "+20 HP + heal",
         _ => "",
     };
 
@@ -294,6 +299,7 @@
 
     protected override int BuildHash()
     {
-        return System.HashCode.Combine( IsVisible, AllManagers.Count );
+        var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+        return System.HashCode.Combine( IsVisible, AllManagers.Count, gm?.State, ShowPlaystyleSelect );
     }
 }

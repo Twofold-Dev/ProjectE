@@ -44,12 +44,15 @@ public sealed class TileRecycler : Component
 		if ( !prefab.IsValid() ) return;
 		prefab.Enabled = false;
 
+		// Preserve the prefab's original Z position so child objects (lamps, etc.) render at correct height
+		float zPos = prefab.WorldPosition.z;
+
 		for ( int i = 0; i < count; i++ )
 		{
 			var clone = prefab.Clone( new CloneConfig
 			{
 				Name = $"{prefab.Name}_Recycle_{i}",
-				Transform = new Transform( new Vector3( xPos, -size * i, 0 ) ),
+				Transform = new Transform( new Vector3( xPos, -size * i, zPos ) ),
 				StartEnabled = true
 			} );
 			list.Add( clone );
@@ -76,13 +79,14 @@ public sealed class TileRecycler : Component
 
 		// Find the lowest Y to know where to place recycled tiles
 		var lowest = list.Last().WorldPosition.y;
+		float zPos = list[0].WorldPosition.z; // preserve Z for child objects (lamps, etc.)
 
 		foreach ( var obj in list )
 		{
 			if ( obj.WorldPosition.y > playerY + buffer )
 			{
 				lowest -= size;
-				obj.WorldPosition = new Vector3( xPos, lowest, 0 );
+				obj.WorldPosition = new Vector3( xPos, lowest, zPos );
 			}
 		}
 	}

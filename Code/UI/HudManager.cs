@@ -20,11 +20,12 @@ public sealed class HudManager : Component
 		// Add ScreenPanel (required for Razor UI to render)
 		var screenPanel = _uiRoot.AddComponent<ScreenPanel>();
 
-		// Add our PanelComponent panels
+		// Add game PanelComponent panels
+		_uiRoot.AddComponent<Sandbox.UI.MainMenuPanel>(); // shows only when State=Lobby
 		_uiRoot.AddComponent<Sandbox.UI.GameHud>();
 		_uiRoot.AddComponent<Sandbox.UI.UpgradePanel>();
 		_uiRoot.AddComponent<Sandbox.UI.GameOverPanel>();
-		_uiRoot.AddComponent<Sandbox.UI.LobbyPanel>();
+		_uiRoot.AddComponent<Sandbox.UI.Chatbox>();
 
 		Log.Info( "HudManager: UI created" );
 	}

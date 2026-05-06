@@ -3,31 +3,34 @@
 @inherits PanelComponent
 
 <root>
-    <div class="hud-root">
-        <div class="hud-top">
-            <div class="health-bar-wrap">
-                <div class="health-bar-fill" style="width: @HealthPercent%"></div>
-                <div class="health-label">@HealthCurrent / @HealthMax</div>
-            </div>
-            <div class="wave-display">Wave @Wave</div>
-            <div class="score-display">Score: @Score</div>
-        </div>
-        <div class="stats-container">
-            @foreach ( var entry in AllPlayerStats )
-            {
-                <div class="stats-panel @entry.Side">
-                    <div class="stats-title">@entry.Name</div>
-                    <div class="stat-row">Fire Rate: @entry.FireRate</div>
-                    <div class="stat-row">Damage: @entry.Damage</div>
-                    <div class="stat-row">Speed: @entry.Speed</div>
-                    <div class="stat-row">Range: @entry.Range</div>
-                    <div class="stat-row">Pens: @entry.SplitCount</div>
-                    <div class="stat-row">Scissors: @entry.ShredderCount | @entry.ShredderDamage dmg | Rng @entry.ShredderRange</div>
-                    <div class="stat-row">Bounce: @entry.PenBounce | Pierce: @entry.PenPierce | BladeBn: @entry.BladeBounce</div>
+    @if ( IsVisible )
+    {
+        <div class="hud-root">
+            <div class="hud-top">
+                <div class="health-bar-wrap">
+                    <div class="health-bar-fill" style="width: @HealthPercent%"></div>
+                    <div class="health-label">@((int)HealthCurrent) / @((int)HealthMax)</div>
                 </div>
-            }
+                <div class="wave-display">Wave @Wave</div>
+                <div class="score-display">Score: @Score</div>
+            </div>
+            <div class="stats-container">
+                @foreach ( var entry in AllPlayerStats )
+                {
+                    <div class="stats-panel @entry.Side">
+                        <div class="stats-title">@entry.Name</div>
+                        <div class="stat-row">Fire Rate: @entry.FireRate</div>
+                        <div class="stat-row">Damage: @entry.Damage</div>
+                        <div class="stat-row">Speed: @entry.Speed</div>
+                        <div class="stat-row">Range: @entry.Range</div>
+                        <div class="stat-row">Pens: @entry.SplitCount</div>
+                        <div class="stat-row">Scissors: @entry.ShredderCount | @entry.ShredderDamage dmg | Rng @entry.ShredderRange</div>
+                        <div class="stat-row">Crit: @entry.CritChance% | Piercing: @entry.PenPierce | BladeBn: @entry.BladeBounce</div>
+                    </div>
+                }
+            </div>
         </div>
-    </div>
+    }
 </root>
 
 <style>
@@ -49,19 +52,38 @@
     private GameManager _gm;
     private ArrowPlayer _player;
     private List<PlayerStatEntry> AllPlayerStats = new();
+    public bool IsVisible { get; set; } = false;
 
     public int Score => _gm?.TotalScore ?? 0;
     public int Wave => _gm?.CurrentWave ?? 0;
-    public float HealthCurrent => _player?.Health ?? 100;
-    public float HealthMax => _player?.MaxHealth ?? 100;
+    /// <summary>Shared health: use first ArrowPlayer's health (authoritative).</summary>
+    public float HealthCurrent
+    {
+        get
+        {
+            var first = Scene.GetAllComponents<ArrowPlayer>().FirstOrDefault();
+            return first?.Health ?? 100;
+        }
+    }
+    public float HealthMax
+    {
+        get
+        {
+            var first = Scene.GetAllComponents<ArrowPlayer>().FirstOrDefault();
+            return first?.MaxHealth ?? 100;
+        }
+    }
     public float HealthPercent => HealthMax > 0 ? (HealthCurrent / HealthMax * 100f) : 0;
 
     protected override void OnUpdate()
     {
         if ( _gm == null )
             _gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
-        if ( _player == null )
-            _player = GetLocalPlayer();
+
+        // Hide during lobby/menu, show during gameplay states
+        var shouldShow = _gm != null && _gm.State != GameManager.GameState.Lobby;
+        if ( IsVisible != shouldShow )
+            IsVisible = shouldShow;
 
         RefreshStats();
         StateHasChanged();
@@ -70,13 +92,13 @@
     private void RefreshStats()
     {
         AllPlayerStats.Clear();
-        int idx = 0;
+        var index = 0;
         foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
         {
             AllPlayerStats.Add( new PlayerStatEntry
             {
-                Name = $"Player {idx + 1}",
-                Side = idx == 0 ? "left" : "right",
+                Name = $"{p.GameObject.Name}",
+                Side = index == 0 ? "left" : "right",
                 FireRate = $"{p.EffectiveFireRate:F1}/s",
                 Damage = $"{(int)p.EffectiveDamage}",
                 Speed = $"{(int)p.EffectiveSpeed}",
@@ -85,25 +107,19 @@
                 ShredderCount = $"{p.GetShredderCount()}",
                 ShredderDamage = $"{(int)p.GetShredderDamage()}",
                 ShredderRange = $"{p.GetShredderRange()}",
-                PenBounce = $"{p.GetPenBounce()}",
+                CritChance = $"{p.GetCritChance() * 10}",
                 PenPierce = $"{p.GetPenPierce()}",
                 BladeBounce = $"{p.GetBladeBounce()}",
             } );
-            idx++;
+            index++;
         }
-    }
-
-    private ArrowPlayer GetLocalPlayer()
-    {
-        foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
-            if ( p.Network.IsOwner ) return p;
-        return null;
     }
 
     protected override int BuildHash()
     {
         // Derive hash from actual displayed values so any stat change triggers re-render
         int hash = 17;
+        hash = hash * 31 + IsVisible.GetHashCode();
         foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
         {
             hash = hash * 31 + p.EffectiveFireRate.GetHashCode();
@@ -114,7 +130,7 @@
             hash = hash * 31 + p.GetShredderCount().GetHashCode();
             hash = hash * 31 + p.GetShredderDamage().GetHashCode();
             hash = hash * 31 + p.GetShredderRange().GetHashCode();
-            hash = hash * 31 + p.GetPenBounce().GetHashCode();
+            hash = hash * 31 + p.GetCritChance().GetHashCode();
             hash = hash * 31 + p.GetPenPierce().GetHashCode();
             hash = hash * 31 + p.GetBladeBounce().GetHashCode();
             hash = hash * 31 + p.Health.GetHashCode();
@@ -127,18 +143,18 @@
 
     public class PlayerStatEntry
     {
-        public string Name { get; set; }
-        public string Side { get; set; }
-        public string FireRate { get; set; }
-        public string Damage { get; set; }
-        public string Speed { get; set; }
-        public string Range { get; set; }
-        public string SplitCount { get; set; }
-        public string ShredderCount { get; set; }
-        public string ShredderDamage { get; set; }
-        public string ShredderRange { get; set; }
-        public string PenBounce { get; set; }
-        public string PenPierce { get; set; }
-        public string BladeBounce { get; set; }
+    	public string Name { get; set; }
+    	public string Side { get; set; }
+    	public string FireRate { get; set; }
+    	public string Damage { get; set; }
+    	public string Speed { get; set; }
+    	public string Range { get; set; }
+    	public string SplitCount { get; set; }
+    	public string ShredderCount { get; set; }
+    	public string ShredderDamage { get; set; }
+    	public string ShredderRange { get; set; }
+    	public string CritChance { get; set; }
+    	public string PenPierce { get; set; }
+    	public string BladeBounce { get; set; }
     }
 }

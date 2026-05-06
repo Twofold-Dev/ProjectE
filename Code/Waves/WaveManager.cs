@@ -363,49 +363,62 @@ public sealed class WaveManager : Component
 			var displayName = GetGateDisplayName( type );
 			var amountText = GetAmountText( type, amount );
 
-			var gateGo = new GameObject( true, $"Gate_{type}_{i}" );
 			var spawnY = GetPlayerY() - SpawnDistance;
-			gateGo.WorldPosition = new Vector3( gatePositions[i], spawnY, 0 );
-			gateGo.WorldRotation = Rotation.From( 0, 90, 0 );
-			gateGo.LocalScale = new Vector3( 1.5f, 1.5f, 1.5f );
+			var gatePos = new Vector3( gatePositions[i], spawnY, 0 );
 
-			var gate = gateGo.Components.Create<UpgradeGate>();
-			gate.UpgradeType = type;
-			gate.Amount = amount;
-			gate.DisplayName = displayName;
-			gate.AmountText = amountText;
-
-			// Use GameManager's gate model if set
-			var gateModel = _gm?.GateModel ?? Model.Plane;
-			var model = gateGo.Components.Create<ModelRenderer>();
-			model.Model = gateModel;
-			if ( _gm?.GateModel is null )
-				model.Tint = GetGateColor( type ); // only tint if using fallback plane
-
-			var col = gateGo.Components.Create<BoxCollider>();
-			col.Center = new Vector3( 1.795f, 31.593f, 35.45f );
-			col.Scale = new Vector3( 17.755f, 63.07f, 65.20f );
-
-			// Physics so players can push through
-			var body = gateGo.Components.Create<Rigidbody>();
-			body.MotionEnabled = true;
-			body.Gravity = true;
-			body.MassOverride = 50f;
-
-			// Label — same sizing as enemy HP panel
-			var labelGo = new GameObject( true, "GateLabel" );
-			labelGo.Parent = gateGo;
-			labelGo.LocalPosition = new Vector3( 0, 30, 0 );
-			labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
-			var wp = labelGo.Components.Create<WorldPanel>();
-			wp.PanelSize = new Vector2( 1200, 300 );
-			wp.LookAtCamera = true;
-			wp.RenderOptions.AfterUI = true;
-			var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
-			label.Text = $"{displayName}\n{amountText}";
-
-			gateGo.NetworkSpawn( null );
+			// Broadcast to all clients so each spawns their own local gate
+			SpawnGateClient( gatePos, type, amount, displayName, amountText, i );
 		}
+	}
+
+	[Broadcast]
+	public void SpawnGateClient( Vector3 position, UpgradeType type, float amount, string displayName, string amountText, int index )
+	{
+		var gateGo = new GameObject( true, $"Gate_{type}_{index}" );
+		gateGo.WorldPosition = position;
+		gateGo.WorldRotation = Rotation.From( 0, 90, 0 );
+		gateGo.LocalScale = new Vector3( 1.5f, 1.5f, 1.5f );
+
+		var gate = gateGo.Components.Create<UpgradeGate>();
+		gate.UpgradeType = type;
+		gate.Amount = amount;
+		gate.DisplayName = displayName;
+		gate.AmountText = amountText;
+
+		// Visual model
+		var gateModel = _gm?.GateModel ?? Model.Plane;
+		var model = gateGo.Components.Create<ModelRenderer>();
+		model.Model = gateModel;
+		model.Tint = (_gm?.GateModel is null ? GetGateColor( type ) : Color.White).WithAlpha( 0.7f );
+
+		// Physics collider — for pushing
+		var col = gateGo.Components.Create<BoxCollider>();
+		col.Center = new Vector3( -5f, 31f, 40f );
+		col.Scale = new Vector3( 29f, 65f, 54f );
+
+		var body = gateGo.Components.Create<Rigidbody>();
+		body.MotionEnabled = true;
+		body.Gravity = true;
+		body.MassOverride = 10f;
+		body.GravityScale = 1f;
+
+		// Trigger collider — on the SAME GameObject as UpgradeGate so OnTriggerEnter fires
+		var triggerCol = gateGo.Components.Create<BoxCollider>();
+		triggerCol.Center = new Vector3( -5f, 31f, 40f );
+		triggerCol.Scale = new Vector3( 39f, 75f, 64f ); // bigger than physics collider
+		triggerCol.IsTrigger = true;
+
+		// Label — same sizing as enemy HP panel (local, not networked)
+		var labelGo = new GameObject( true, "GateLabel" );
+		labelGo.Parent = gateGo;
+		labelGo.LocalPosition = new Vector3( 0, 30, 0 );
+		labelGo.LocalScale = new Vector3( 5f, 5f, 5f );
+		var wp = labelGo.Components.Create<WorldPanel>();
+		wp.PanelSize = new Vector2( 1200, 300 );
+		wp.LookAtCamera = true;
+		wp.RenderOptions.AfterUI = true;
+		var label = labelGo.Components.Create<Sandbox.UI.GateLabel>();
+		label.Text = $"{displayName}\n{amountText}";
 	}
 
 	/// <summary>
@@ -445,11 +458,10 @@ public sealed class WaveManager : Component
 		col.Center = Vector3.Zero;
 		col.Scale = new Vector3( 20f, 20f, 40f );
 
-		// Physics so players can push through
 		var body = go.Components.Create<Rigidbody>();
 		body.MotionEnabled = true;
 		body.Gravity = true;
-		body.MassOverride = 30f;
+		body.MassOverride = 5f;
 
 		var labelGo = new GameObject( true, "DropLabel" );
 		labelGo.Parent = go;
@@ -467,18 +479,22 @@ public sealed class WaveManager : Component
 
 	private float GetRandomAmount( UpgradeType type )
 	{
+		// Values must match the actual per-level bonus applied in ArrowPlayer / UpgradeManager
 		return type switch
 		{
-			UpgradeType.ArrowFrequency => Random.Shared.Float( 0.1f, 0.2f ),
-			UpgradeType.ArrowDamage => Random.Shared.Int( 2, 5 ),
-			UpgradeType.ArrowSpeed => Random.Shared.Int( 30, 80 ),
-			UpgradeType.ArrowDistance => Random.Shared.Int( 50, 150 ),
+			UpgradeType.ArrowFrequency => 0.15f,       // GetFireRateBonus: level * 0.15
+			UpgradeType.ArrowDamage => 3f,             // GetDamageBonus: level * 3
+			UpgradeType.ArrowSpeed => 100f,            // GetSpeedBonus: level * 100
+			UpgradeType.ArrowDistance => 100f,          // GetDistanceBonus: level * 100
 			UpgradeType.SwordCount => 1,
-			UpgradeType.SwordDamage => Random.Shared.Int( 3, 8 ),
+			UpgradeType.SwordDamage => 5f,             // GetShredderDamage: base + level * 5
 			UpgradeType.SplitCount => 1,
 			UpgradeType.SwordFrequency => 1,
 			UpgradeType.SwordRange => 1,
-			UpgradeType.HealthBoost => Random.Shared.Int( 10, 20 ),
+			UpgradeType.PetCount => 1,
+			UpgradeType.PetFireRate => 0.5f,           // GetBuddyFireRate: 1 + level * 0.5
+			UpgradeType.CritChance => 1,
+			UpgradeType.HealthBoost => 20f,            // ApplyUpgradeEffect: +20 HP
 			_ => 1,
 		};
 	}
@@ -488,7 +504,7 @@ public sealed class WaveManager : Component
 		UpgradeType.ArrowFrequency => "FIRE RATE",
 		UpgradeType.ArrowDamage => "DAMAGE",
 		UpgradeType.ArrowDistance => "RANGE",
-		UpgradeType.SwordCount => "BLADE",
+		UpgradeType.SwordCount => "SCISSORS",
 		UpgradeType.SwordFrequency => "CD DOWN",
 		UpgradeType.SplitCount => "PEN",
 		UpgradeType.ArrowSpeed => "PROJ SPD",
@@ -503,14 +519,17 @@ public sealed class WaveManager : Component
 		return type switch
 		{
 			UpgradeType.ArrowFrequency => $"+{amount:F1}/s",
-			UpgradeType.ArrowDamage => $"+{(int)amount}",
-			UpgradeType.ArrowSpeed => $"+{(int)amount}",
-			UpgradeType.ArrowDistance => $"+{(int)amount}",
+			UpgradeType.ArrowDamage => $"+{(int)amount} dmg",
+			UpgradeType.ArrowSpeed => $"+{(int)amount} spd",
+			UpgradeType.ArrowDistance => $"+{(int)amount} rng",
 			UpgradeType.SwordCount => $"+{(int)amount}",
-			UpgradeType.SwordDamage => $"+{(int)amount}",
+			UpgradeType.SwordDamage => $"+{(int)amount} dmg",
 			UpgradeType.SwordFrequency => $"+{(int)amount}",
 			UpgradeType.SwordRange => $"+{(int)amount}",
 			UpgradeType.SplitCount => $"+{(int)amount}",
+			UpgradeType.PetCount => $"+{(int)amount}",
+			UpgradeType.PetFireRate => $"+{amount:F1}/s",
+			UpgradeType.CritChance => $"+{(int)amount * 10}%",
 			UpgradeType.HealthBoost => $"+{(int)amount} HP",
 			_ => $"+{(int)amount}",
 		};
@@ -539,6 +558,14 @@ public sealed class WaveManager : Component
 		if ( _gm.IsValid() )
 		{
 			_gm.AddScore( enemy.ScoreValue );
+		}
+
+		// Award Paperclips for progression
+		if ( _gm.IsValid() )
+		{
+			int paperclips = enemy is BossEnemy ? 10 : 1;
+			_gm.RunPaperclipsEarned += paperclips;
+			_gm.RunEnemiesKilled++;
 		}
 
 		// 30% chance to drop an upgrade pickup

@@ -1,0 +1,82 @@
+@* In-game chat — following pizza_clicker's panel-child pattern. Works in lobby and game. *@
+@namespace Sandbox.UI
+@inherits PanelComponent
+@implements Component.INetworkListener
+
+<root>
+    <div class="chat-canvas" @ref="ChatCanvas"></div>
+
+    <div class="chat-input">
+        <TextEntry @ref="InputBox" onsubmit="@OnSubmit" placeholder="Press Enter to Chat" />
+    </div>
+</root>
+
+@code {
+    public static Chatbox Instance { get; private set; }
+
+    private TextEntry InputBox;
+    private Panel ChatCanvas;
+    private TimeSince _lastSubmit;
+
+    protected override void OnStart()
+    {
+        Instance = this;
+    }
+
+    protected override void OnUpdate()
+    {
+        if ( InputBox is null ) return;
+
+        // Only open chat with Enter when input doesn't have focus
+        // _lastSubmit prevents Enter key from immediately re-opening after submit
+        if ( !InputBox.HasFocus && Input.Pressed( "Chat" ) && _lastSubmit > 0.1f )
+        {
+            InputBox.Focus();
+        }
+
+        SetClass( "open", InputBox.HasFocus );
+    }
+
+    private void OnSubmit()
+    {
+        var text = InputBox.Text.Trim();
+        InputBox.Text = "";
+        _lastSubmit = 0;
+
+        if ( string.IsNullOrWhiteSpace( text ) ) return;
+
+        SendMessage( text );
+    }
+
+    [Broadcast]
+    public void SendMessage( string text )
+    {
+        var name = Rpc.Caller.DisplayName;
+        var entry = ChatCanvas.AddChild<ChatEntry>();
+        entry.Name = name;
+        entry.Text = text;
+        entry.TimeSinceBorn = 0;
+    }
+
+    public void AddInfo( string name, string text )
+    {
+        var entry = ChatCanvas.AddChild<ChatEntry>();
+        entry.Name = name;
+        entry.Text = text;
+        entry.TimeSinceBorn = 0;
+    }
+
+    void Component.INetworkListener.OnConnected( Connection channel )
+    {
+        if ( IsProxy ) return;
+        AddInfo( "***", $"{channel.DisplayName} connected" );
+    }
+
+    void Component.INetworkListener.OnDisconnected( Connection channel )
+    {
+        if ( IsProxy ) return;
+        AddInfo( "***", $"{channel.DisplayName} disconnected" );
+    }
+
+    protected override int BuildHash() => 0;
+}

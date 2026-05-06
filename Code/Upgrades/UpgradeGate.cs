@@ -24,101 +24,24 @@ public sealed class UpgradeGate : Component
 	/// </summary>
 	[Property] public string AmountText { get; set; } = "";
 
-	private bool _upgradeApplied = false;
+	public bool UpgradeApplied { get; set; } = false;
 	private TimeSince _timeSinceApplied = 0;
 
 	protected override void OnFixedUpdate()
 	{
-		if ( !Networking.IsHost ) return;
-
-		try
-		{
-
-		if ( _upgradeApplied )
+		if ( UpgradeApplied )
 		{
 			if ( _timeSinceApplied >= 5f )
 				GameObject.Destroy();
 			return;
 		}
-
-		if ( !GameObject.IsValid() ) return;
-
-		foreach ( var player in Scene.GetAllComponents<ArrowPlayer>() )
-		{
-			if ( player.IsDead ) continue;
-			var dist = WorldPosition.Distance( player.WorldPosition );
-			if ( dist < 60f )
-			{
-				var um = player.GetComponent<UpgradeManager>();
-				if ( um.IsValid() )
-				{
-					ApplyUpgrade( player, um );
-					// Fly the gate label into the player as visual feedback
-					FlyLabelToPlayer( player );
-					_upgradeApplied = true;
-					_timeSinceApplied = 0;
-				}
-				return; // don't destroy — let physics push it around
-			}
-		}
-		}
-		catch ( System.Exception e )
-		{
-			Log.Error( $"UpgradeGate: {e.Message}" );
-		}
-	}
-
-	private void ApplyUpgrade( ArrowPlayer player, UpgradeManager um )
-	{
-		var state = um.CurrentUpgrades ?? new UpgradeState();
-
-		switch ( UpgradeType )
-		{
-			// DAMAGE gate: upgrades both ArrowDamage + SwordDamage
-			case UpgradeType.ArrowDamage:
-				if ( state.ArrowDamage < 10 ) state.ArrowDamage++;
-				if ( state.SwordDamage < 10 ) state.SwordDamage++;
-				break;
-
-			// FIRE RATE gate: upgrades whichever is lower (ArrowFrequency or SwordFrequency)
-			case UpgradeType.ArrowFrequency:
-				if ( state.ArrowFrequency < state.SwordFrequency && state.ArrowFrequency < 10 )
-					state.ArrowFrequency++;
-				else if ( state.SwordFrequency < 10 )
-					state.SwordFrequency++;
-				break;
-
-			// SPLIT gate: pen split count
-			case UpgradeType.SplitCount:
-				if ( state.SplitCount < 10 ) state.SplitCount++;
-				break;
-
-			// BURST gate: shredder blade count
-			case UpgradeType.SwordCount:
-				if ( state.SwordCount < 8 ) state.SwordCount++;
-				break;
-
-			// RANGE gate: upgrades both ArrowDistance + SwordRange
-			case UpgradeType.ArrowDistance:
-				if ( state.ArrowDistance < 10 ) state.ArrowDistance++;
-				if ( state.SwordRange < 10 ) state.SwordRange++;
-				break;
-
-			case UpgradeType.HealthBoost:
-				if ( state.HealthBoost < 10 )
-				{
-					state.HealthBoost++;
-					player.MaxHealth += 20f;
-					player.Health = Math.Min( player.Health + 20f, player.MaxHealth );
-				}
-				break;
-		}
 	}
 
 	/// <summary>
 	/// Detach the gate's WorldPanel label and fly it into the player's body.
+	/// Called by UpgradePicker on the player.
 	/// </summary>
-	private void FlyLabelToPlayer( ArrowPlayer player )
+	public void FlyLabelToPlayer( ArrowPlayer player )
 	{
 		if ( !player.IsValid() ) return;
 		if ( !GameObject.IsValid() ) return;
@@ -165,7 +88,7 @@ public sealed class FlyToPlayer : Component
 
 	protected override void OnFixedUpdate()
 	{
-		if ( !Networking.IsHost ) return;
+		// Removed host-only check — runs on all machines for local visual feedback
 		if ( !Target.IsValid() ) { GameObject.Destroy(); return; }
 
 		var targetPos = Target.WorldPosition;

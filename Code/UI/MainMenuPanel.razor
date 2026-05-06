@@ -1,0 +1,256 @@
+@* Main Menu — Terminal CLI theme with lobby ready-up.
+   Host sees START GAME (only when all players ready or solo).
+   Clients see READY / UNREADY toggle. *@
+@namespace Sandbox.UI
+@inherits PanelComponent
+
+<root>
+    @{
+        var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+        var isMainMenu = gm != null && gm.State == GameManager.GameState.Lobby;
+    }
+    @if ( isMainMenu && gm != null )
+    {
+        var prog = gm.Progression;
+        var connections = Connection.All?.ToArray() ?? Array.Empty<Connection>();
+        var isHost = Networking.IsHost;
+
+        @* Horizontal layout: main card (center) + optional side panel (right) *@
+        <div class="menu-row">
+            @* Main menu card — always visible in the center *@
+            <div class="menu-card">
+                <div class="menu-title">PROJECT E</div>
+                <div class="menu-subtitle">Infinite Office Runner</div>
+
+                <div class="sep">====================</div>
+
+                @* Player list with ready states *@
+                <div class="section-title">// PLAYERS</div>
+                <div class="player-list">
+                    @foreach ( var player in Scene.GetAllComponents<ArrowPlayer>() )
+                    {
+                        <div class="player-row">
+                            <span class="prompt">$</span>
+                            <span class="player-name">@player.GameObject.Name</span>
+                            <span class="player-status @(player.IsReady ? "ready" : "")">@(player.IsReady ? "[RDY]" : "[...]")</span>
+                        </div>
+                    }
+                    @if ( Scene.GetAllComponents<ArrowPlayer>().Count() == 0 )
+                    {
+                        <div class="player-row"><span class="prompt">$</span><span class="player-name muted">awaiting players...</span></div>
+                    }
+                </div>
+
+                <div class="sep">--------------------</div>
+
+                @* Ready / Start buttons *@
+                <div class="action-row">
+                    @{
+                        var localPlayer = Scene.GetAllComponents<ArrowPlayer>()
+                            .FirstOrDefault( p => p.Network.Owner == Connection.Local );
+                        var amReady = localPlayer != null && localPlayer.IsReady;
+                    }
+                    <div class="term-btn" @onclick="@(() => { if ( localPlayer != null ) localPlayer.IsReady = !localPlayer.IsReady; })">
+                        @(amReady ? "[ UNREADY ]" : "[ READY ]")
+                    </div>
+                    @if ( isHost )
+                    {
+                        var allReady = Scene.GetAllComponents<ArrowPlayer>().All( p => p.IsReady );
+                        if ( allReady && Scene.GetAllComponents<ArrowPlayer>().Count() > 0 )
+                        {
+                            <div class="term-btn term-btn-start" @onclick="@(() => gm.StartGame())">
+                                [ START GAME ]
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="term-btn-disabled">[ WAITING... ]</div>
+                        }
+                    }
+                </div>
+
+                <div class="sep">====================</div>
+
+                <div class="currency-row">
+                    <span>📎 @prog.Currency.Paperclips</span>
+                </div>
+                <div class="action-row">
+                    <div class="term-btn" @onclick="@(() => _showShop = !_showShop)">[ SHOP ]</div>
+                    <div class="term-btn" @onclick="@(() => ToggleAchievements())">[ ACHV ]</div>
+                    @{
+                        var resetLabel = _resetClicks switch
+                        {
+                            0 => "[ RESET ]",
+                            1 => "[ CONFIRM? ]",
+                            2 => "[ LAST WARN ]",
+                            _ => "[ DELETING.. ]"
+                        };
+                    }
+                    <div class="term-btn term-btn-reset" @onclick="@(() => {
+                        _resetClicks++;
+                        if (_resetClicks >= 3) { prog.ResetAll(); _resetClicks = 0; }
+                    })">@resetLabel</div>
+                </div>
+                <div class="action-row">
+                    <div class="term-btn" @onclick="@(() => ToggleLeaderboard())">[ LEAD ]</div>
+                    <div class="term-btn" @onclick="@(() => Game.Close())">[ QUIT ]</div>
+                </div>
+
+                <div class="status-line">user@projecte:~$ ./projecte --lobby<span class="cursor-blink">_</span></div>
+            </div>
+
+            @* Shop side panel — slides from the right *@
+            <div class="side-panel side-panel-right @(_showShop ? "side-panel-open" : "")">
+                <div class="side-panel-card">
+                    <div class="title-bar">+--- SHOP ----+</div>
+                    <div class="currency-line">📎 @prog.Currency.Paperclips</div>
+                    <div class="sep">----------------</div>
+                    @foreach ( var u in GetUpgradeList() )
+                    {
+                        var level = prog.Shop.GetLevel( u.Id );
+                        var max = prog.Shop.GetMaxLevel( u.Id );
+                        var cost = prog.Shop.GetNextCost( u.Id );
+                        var isMaxed = level >= max;
+                        <div class="upgrade-row shop-row">
+                            <div class="upgrade-name">@u.Name</div>
+                            <div class="upgrade-desc">@u.Desc</div>
+                            <div class="upgrade-level">[Lv @level/@max]</div>
+                            @if ( isMaxed )
+                            {
+                                <div class="term-btn-disabled">[ MAX ]</div>
+                            }
+                            else
+                            {
+                                <div class="term-btn" @onclick="@(() => BuyUpgrade(gm, u.Id))">BUY 📎@cost</div>
+                            }
+                        </div>
+                    }
+                    <div class="sep">----------------</div>
+                    <div class="term-btn" @onclick="@(() => { _showShop = false; _showAchievements = false; })">[ BACK ]</div>
+                </div>
+            </div>
+
+            @* Achievements side panel — slides from the left *@
+            <div class="side-panel side-panel-left @(_showAchievements ? "side-panel-open" : "")">
+                <div class="side-panel-card">
+                    <div class="title-bar">+--- ACHIEVEMENTS ----+</div>
+                    @foreach ( var a in Progression.AchievementData.All )
+                    {
+                        var earned = prog.Achievements.IsUnlocked( a.Id );
+                        <div class="upgrade-row">
+                            <div class="upgrade-name">@(earned ? "[OK]" : "[--]") @a.Name</div>
+                            <div class="upgrade-level">+@a.PaperclipReward¢</div>
+                        </div>
+                    }
+                    <div class="sep">----------------</div>
+                    <div class="term-btn" @onclick="@(() => { _showShop = false; _showAchievements = false; _showLeaderboard = false; })">[ BACK ]</div>
+                </div>
+            </div>
+
+            @* Leaderboard side panel — same left side as achievements *@
+            <div class="side-panel side-panel-left @(_showLeaderboard ? "side-panel-open" : "")">
+                <div class="side-panel-card">
+                    <div class="title-bar">+--- LEADERBOARD ----+</div>
+                    @{
+                        var entries = gm.LeaderboardEntries
+                            .OrderByDescending( e => e.HighestWave )
+                            .ThenByDescending( e => e.EnemiesKilled )
+                            .ToArray();
+                    }
+                    @if ( entries.Length == 0 )
+                    {
+                        <div class="upgrade-row"><div class="upgrade-name">no data yet...</div></div>
+                    }
+                    else
+                    {
+                        var rank = 1;
+                        foreach ( var e in entries )
+                        {
+                            <div class="upgrade-row">
+                                <div class="upgrade-name">#@rank @e.Name</div>
+                                <div class="upgrade-level">Wave @e.HighestWave</div>
+                            </div>
+                            rank++;
+                        }
+                    }
+                    <div class="sep">----------------</div>
+                    <div class="term-btn" @onclick="@(() => { _showShop = false; _showAchievements = false; _showLeaderboard = false; })">[ BACK ]</div>
+                </div>
+            </div>
+        </div> @* end menu-row *@
+
+        <div class="roadmap-panel">
+                <div class="roadmap-title">// ROADMAP</div>
+                <div class="roadmap-item">$ more enemy types</div>
+                <div class="roadmap-item">$ more weapon types</div>
+                <div class="roadmap-item">$ more upgrades</div>
+                <div class="roadmap-item">$ mob balancing</div>
+                <div class="roadmap-item">$ items</div>
+                <div class="roadmap-item">$ fix multiplayer</div>
+                <div class="roadmap-item">$ more everything</div>
+            </div>
+        }
+    }
+</root>
+
+@code {
+    private bool _showShop = false;
+    private bool _showAchievements = false;
+    private bool _showLeaderboard = false;
+    private int _resetClicks = 0;
+
+    protected override void OnUpdate()
+    {
+        // Always refresh UI so sync'd properties (ArrowPlayer.IsReady) update on clients
+        StateHasChanged();
+    }
+
+    protected override int BuildHash()
+    {
+        var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+        var players = Scene.GetAllComponents<ArrowPlayer>().ToArray();
+        int readyHash = 17;
+        foreach ( var p in players )
+            readyHash = readyHash * 31 + p.IsReady.GetHashCode();
+        return System.HashCode.Combine( gm?.State,
+            _showShop, _showAchievements, _showLeaderboard,
+            gm?.Progression?.Currency?.Paperclips,
+            players.Length, readyHash );
+    }
+
+    private void BuyUpgrade( GameManager gm, string id )
+    {
+        gm?.Progression?.PurchaseUpgrade( id );
+    }
+
+    private void ToggleAchievements()
+    {
+        if ( _showAchievements )
+            _showAchievements = false;
+        else
+        {
+            _showLeaderboard = false; // close leaderboard first
+            _showAchievements = true;
+        }
+    }
+
+    private void ToggleLeaderboard()
+    {
+        if ( _showLeaderboard )
+            _showLeaderboard = false;
+        else
+        {
+            _showAchievements = false; // close achievements first
+            _showLeaderboard = true;
+        }
+    }
+
+    private static (string Id, string Name, string Desc)[] GetUpgradeList() => new[]
+    {
+        ("SharperPens", "Sharper Pens", "+2 dmg per pen"),
+        ("FasterFiring", "Faster Firing", "+0.1 pens/sec"),
+        ("ArmorPlating", "Armor Plating", "+20 max HP"),
+        ("OfficeCoffee", "Office Coffee", "+5% move speed"),
+        ("BulkOrder", "Bulk Order", "+1 pen per throw"),
+    };
+}
