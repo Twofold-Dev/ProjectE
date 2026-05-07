@@ -247,13 +247,14 @@ public sealed class ArrowPlayer : Component
 			return;
 		}
 
+		// Use host-authoritative forward speed so all players stay aligned
+		var effectiveForwardSpeed = gm?.ForwardSpeed ?? ForwardSpeed;
+
 		// Read W/S for lane movement: W = right, S = left
-		// Input.AnalogMove returns (x=left/right, y=forward/back, z=0)
-		// We use .y: W(forward=+1) → right(+X), S(backward=-1) → left(-X)
 		var moveInput = Input.AnalogMove;
 
 		// A/D lane movement + auto-walk forward
-		_pc.WishVelocity = new Vector3( moveInput.y * MoveSpeed, -ForwardSpeed, 0 );
+		_pc.WishVelocity = new Vector3( moveInput.y * MoveSpeed, -effectiveForwardSpeed, 0 );
 
 		// Handle jump prevention (JumpSpeed=0 on PlayerController already handles this,
 		// but double-check)
@@ -704,6 +705,8 @@ _shredderBlades.Add( blade );
 
 
 	#endregion
+
+
 
 	#region Visual
 

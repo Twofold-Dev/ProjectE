@@ -12,20 +12,21 @@
                 <div class="upgrade-players">
                     @foreach ( var um in AllManagers )
                     {
-                        var isOwner = um.Network.IsOwner;
-                        var side = isOwner ? "right" : "left";
+                        var capturedUm = um;
+                        var isMine = IsLocalPlayer( capturedUm );
+                        var side = isMine ? "right" : "left";
                         <div class="upgrade-player-side @side">
-                            <div class="upgrade-player-name @side">@GetPlayerName(um)</div>
-                            @if ( !um.HasSelected )
+                            <div class="upgrade-player-name @side">@GetPlayerName(capturedUm)</div>
+                            @if ( !capturedUm.HasSelected )
                             {
                                 <div class="upgrade-choices">
                                     @foreach ( var ps in playstyles )
                                     {
-                                        var cardClass = isOwner ? "upgrade-card clickable" : "upgrade-card disabled";
-                                        <div class="@cardClass"
-                                             @onclick="@(isOwner ? (Action)(() => SelectPlaystyle(um, ps)) : null)">
-                                            <div class="upgrade-name">@GetPlaystyleName(ps)</div>
-                                            <div class="upgrade-desc">@GetPlaystyleDesc(ps)</div>
+                                        var capturedPs = ps;
+                                        <div class="@(isMine ? "upgrade-card clickable" : "upgrade-card disabled")"
+                                             @onclick="@(() => OnPlaystyleClicked(capturedUm, capturedPs))">
+                                            <div class="upgrade-name">@GetPlaystyleName(capturedPs)</div>
+                                            <div class="upgrade-desc">@GetPlaystyleDesc(capturedPs)</div>
                                         </div>
                                     }
                                 </div>
@@ -33,12 +34,12 @@
                             else
                             {
                                 <div class="upgrade-chosen">
-                                    <div class="upgrade-chosen-name">@GetPlaystyleName(um.CurrentUpgrades.ChosenPlaystyle)</div>
+                                    <div class="upgrade-chosen-name">@GetPlaystyleName(capturedUm.CurrentUpgrades.ChosenPlaystyle)</div>
                                 </div>
                             }
-                            @if ( !isOwner && !um.HasSelected )
+                            @if ( !isMine && !capturedUm.HasSelected )
                             {
-                                <div class="waiting-text">Waiting for @GetPlayerName(um)...</div>
+                                <div class="waiting-text">Waiting for @GetPlayerName(capturedUm)...</div>
                             }
                         </div>
                     }
@@ -52,25 +53,26 @@
                 <div class="upgrade-players">
                     @foreach ( var um in AllManagers )
                     {
-                        var isOwner = um.Network.IsOwner;
-                        var side = isOwner ? "right" : "left";
+                        var capturedUm = um;
+                        var isMine = IsLocalPlayer( capturedUm );
+                        var side = isMine ? "right" : "left";
                         <div class="upgrade-player-side @side">
-                            <div class="upgrade-player-name @side">@GetPlayerName(um)</div>
-                            @if ( !um.HasSelected )
+                            <div class="upgrade-player-name @side">@GetPlayerName(capturedUm)</div>
+                            @if ( !capturedUm.HasSelected )
                             {
                                 <div class="upgrade-choices">
-                                    @foreach ( var option in (um.CurrentOptions ?? new()) )
+                                    @foreach ( var option in (capturedUm.CurrentOptions ?? new()) )
                                     {
-                                        var cardClass = isOwner ? "upgrade-card clickable" : "upgrade-card disabled";
-                                        <div class="@cardClass"
-                                             @onclick="@(isOwner ? (Action)(() => um.SelectUpgrade(option)) : null)">
-                                            <div class="upgrade-name">@GetName(option)</div>
-                                            <div class="upgrade-level">Lv @GetLevel(um, option) → @(GetLevel(um, option) + 1)</div>
-                                            <div class="upgrade-desc">@GetDesc(option)</div>
+                                        var capturedOption = option;
+                                        <div class="@(isMine ? "upgrade-card clickable" : "upgrade-card disabled")"
+                                             @onclick="@(() => OnUpgradeClicked(capturedUm, capturedOption))">
+                                            <div class="upgrade-name">@GetName(capturedOption)</div>
+                                            <div class="upgrade-level">Lv @GetLevel(capturedUm, capturedOption) → @(GetLevel(capturedUm, capturedOption) + 1)</div>
+                                            <div class="upgrade-desc">@GetDesc(capturedOption)</div>
                                         </div>
                                     }
                                 </div>
-                                @if ( um.CurrentOptions.Count == 0 )
+                                @if ( capturedUm.CurrentOptions.Count == 0 )
                                 {
                                     <div class="upgrade-status">All upgrades maxed!</div>
                                 }
@@ -79,12 +81,12 @@
                             {
                                 <div class="upgrade-chosen">
                                     <div class="upgrade-chosen-label">Chosen</div>
-                                    <div class="upgrade-chosen-name">@GetName(um.LastSelected ?? UpgradeType.ArrowFrequency)</div>
+                                    <div class="upgrade-chosen-name">@GetName(capturedUm.LastSelected ?? UpgradeType.ArrowFrequency)</div>
                                 </div>
                             }
-                            @if ( !isOwner && !um.HasSelected )
+                            @if ( !isMine && !capturedUm.HasSelected )
                             {
-                                <div class="waiting-text">Waiting for @GetPlayerName(um)...</div>
+                                <div class="waiting-text">Waiting for @GetPlayerName(capturedUm)...</div>
                             }
                         </div>
                     }
@@ -199,8 +201,9 @@
 @code {
     private GameManager _gm;
     private List<UpgradeManager> AllManagers = new();
+
     public bool IsVisible { get; set; } = false;
-    public bool ShowPlaystyleSelect => _gm != null && !_gm.PlaystyleChosen;
+    public bool ShowPlaystyleSelect => _gm != null && !_gm.PlaystylePhaseComplete;
 
     private List<Playstyle> playstyles = new() { Playstyle.RapidFire, Playstyle.SplitShot, Playstyle.PowerShot };
 
@@ -220,16 +223,43 @@
         {
             foreach ( var um in Scene.GetAllComponents<UpgradeManager>() )
             {
-                // Only offer upgrades if not already populated (avoids double-call on host)
-                if ( !ShowPlaystyleSelect && um.CurrentOptions.Count == 0 && !um.HasSelected )
+                // Generate options if not yet populated.
+                if ( !ShowPlaystyleSelect && um.CurrentOptions.Count == 0 )
                     um.OfferUpgrades();
                 AllManagers.Add( um );
             }
         }
     }
 
-    private void SelectPlaystyle( UpgradeManager um, Playstyle ps )
+    private void OnUpgradeClicked( UpgradeManager um, UpgradeType option )
     {
+        if ( !IsLocalPlayer( um ) )
+        {
+            Log.Info( $"OnUpgradeClicked: not local player, ignoring" );
+            return;
+        }
+        if ( um.HasSelected )
+        {
+            Log.Info( $"OnUpgradeClicked: already selected, ignoring" );
+            return;
+        }
+        Log.Info( $"Upgrade clicked: um={um.GameObject.Name}, type={option}" );
+        um.SelectUpgrade( option );
+    }
+
+    private void OnPlaystyleClicked( UpgradeManager um, Playstyle ps )
+    {
+        if ( !IsLocalPlayer( um ) )
+        {
+            Log.Info( $"OnPlaystyleClicked: not local player, ignoring" );
+            return;
+        }
+        if ( um.HasSelected )
+        {
+            Log.Info( $"OnPlaystyleClicked: already selected, ignoring" );
+            return;
+        }
+        Log.Info( $"Playstyle clicked: um={um.GameObject.Name}, style={ps}" );
         um.SelectPlaystyle( ps );
     }
 
@@ -245,6 +275,14 @@
     {
         var player = um.GetComponent<ArrowPlayer>();
         return player?.GameObject.Name ?? "Player";
+    }
+
+    private bool IsLocalPlayer( UpgradeManager um )
+    {
+        if ( !um.IsValid() ) return false;
+        // Use GUID comparison — more reliable than Connection reference identity
+        var ownerId = um.Network.Owner?.Id;
+        return ownerId.HasValue && ownerId.Value == Connection.Local?.Id;
     }
 
     private string GetPlaystyleDesc( Playstyle ps ) => ps switch
@@ -300,6 +338,19 @@
     protected override int BuildHash()
     {
         var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
-        return System.HashCode.Combine( IsVisible, AllManagers.Count, gm?.State, ShowPlaystyleSelect );
+        int hash = 17;
+        hash = hash * 31 + IsVisible.GetHashCode();
+        hash = hash * 31 + AllManagers.Count;
+        hash = hash * 31 + (gm?.State ?? GameManager.GameState.Lobby).GetHashCode();
+        hash = hash * 31 + ShowPlaystyleSelect.GetHashCode();
+
+        foreach ( var um in AllManagers )
+        {
+            hash = hash * 31 + um.HasSelected.GetHashCode();
+            hash = hash * 31 + um.PlaystyleSelected.GetHashCode();
+            hash = hash * 31 + um.CurrentOptions.Count.GetHashCode();
+        }
+
+        return hash;
     }
 }

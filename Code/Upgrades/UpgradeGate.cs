@@ -35,6 +35,26 @@ public sealed class UpgradeGate : Component
 				GameObject.Destroy();
 			return;
 		}
+
+		// Client-side cleanup: destroy if behind ALL players (player walks -Y, so gate is behind
+		// when gateY > playerY + margin). Mirror of WaveManager.CleanupBehindPlayer logic.
+		if ( !Networking.IsHost )
+		{
+			bool behindAll = true;
+			foreach ( var p in Scene.GetAllComponents<ArrowPlayer>() )
+			{
+				if ( WorldPosition.y <= p.WorldPosition.y + 200f )
+				{
+					behindAll = false;
+					break;
+				}
+			}
+			if ( behindAll )
+			{
+				GameObject.Destroy();
+				return;
+			}
+		}
 	}
 
 	/// <summary>

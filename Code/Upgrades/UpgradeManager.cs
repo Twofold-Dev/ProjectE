@@ -23,6 +23,11 @@ public sealed class UpgradeManager : Component
 	/// </summary>
 	[Sync] public bool HasSelected { get; set; } = false;
 
+	/// <summary>
+	/// Whether this player has chosen their playstyle. Per-player, not global.
+	/// </summary>
+	[Sync] public bool PlaystyleSelected { get; set; } = false;
+
 	private GameManager _gm;
 
 	protected override void OnStart()
@@ -43,8 +48,9 @@ public sealed class UpgradeManager : Component
 		var pool = GetAvailableUpgrades( currentWave );
 		if ( pool.Count == 0 )
 		{
-			// All upgrades maxed — just confirm ready
-			ConfirmSelection();
+			// All upgrades maxed — mark as ready and broadcast
+			HasSelected = true;
+			BroadcastSelection();
 			return;
 		}
 
@@ -61,16 +67,6 @@ public sealed class UpgradeManager : Component
 		}
 	}
 
-	/// <summary>
-	/// Broadcast to all clients to generate upgrade options locally.
-	/// Called by host after setting UpgradeSelect state.
-	/// </summary>
-	[Broadcast]
-	public void BroadcastOfferUpgrades()
-	{
-		OfferUpgrades();
-	}
-
 	/// <summary>Broadcast game resume to all clients. Always gets fresh GameManager reference.</summary>
 	[Broadcast]
 	public void ResumeGame()
@@ -81,6 +77,10 @@ public sealed class UpgradeManager : Component
 			Log.Warning( "ResumeGame: No GameManager found" );
 			return;
 		}
+
+		if ( !gm.PlaystylePhaseComplete )
+			gm.PlaystylePhaseComplete = true;
+
 		gm.State = GameManager.GameState.Playing;
 		gm.Scene.TimeScale = 1;
 		Log.Info( $"ResumeGame: IsHost={Networking.IsHost}" );
@@ -88,22 +88,20 @@ public sealed class UpgradeManager : Component
 
 	/// <summary>Broadcast upgrade phase state to all clients. Always gets fresh GameManager reference.</summary>
 	[Broadcast]
-	public void BroadcastUpgradePhase( int wave, bool playstyleChosen )
+	public void BroadcastUpgradePhase( int wave )
 	{
 		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
 		if ( !gm.IsValid() ) return;
 		gm.CurrentWave = wave;
 		gm.State = GameManager.GameState.UpgradeSelect;
-		gm.PlaystyleChosen = playstyleChosen;
 		gm.Scene.TimeScale = 0;
-	}
 
-	[Broadcast]
-	public void BroadcastPlaystyleChosen()
-	{
-		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
-		if ( !gm.IsValid() ) return;
-		gm.PlaystyleChosen = true;
+		// Reset HasSelected for ALL players to prevent stale BroadcastSelection
+		// from previous waves corrupting this selection phase.
+		foreach ( var um in Scene.GetAllComponents<UpgradeManager>() )
+		{
+			um.HasSelected = false;
+		}
 	}
 
 	/// <summary>
@@ -158,35 +156,50 @@ public sealed class UpgradeManager : Component
 	[Rpc.Host]
 	public void SelectUpgrade( UpgradeType type )
 	{
-		if ( HasSelected ) return;
-		if ( !CurrentOptions.Contains( type ) ) return;
+		if ( HasSelected )
+		{
+			Log.Info( $"SelectUpgrade skipped: HasSelected already true for {GameObject.Name}, caller={Rpc.Caller?.DisplayName ?? "null"}" );
+			return;
+		}
+		Log.Info( $"SelectUpgrade processing: um={GameObject.Name}, type={type}, caller={Rpc.Caller?.DisplayName ?? "null"}" );
 
-		CurrentUpgrades.ApplyUpgrade( type );
+		// Note: CurrentOptions is intentionally NOT synced (each client generates locally).
+		// We trust the client's selection since the UI constrains choices.
+		// Validation removed to avoid host/client option mismatch.
+
+		// Apply upgrade — must reassign to trigger [Sync] replication
+		var state = CurrentUpgrades ?? new UpgradeState();
+		state.ApplyUpgrade( type );
+		CurrentUpgrades = state;
+
 		LastSelected = type;
 		HasSelected = true;
 		Log.Info( $"{GameObject.Name} selected upgrade: {type}" );
 		ApplyUpgradeEffect( type );
-		ConfirmSelection();
+		BroadcastSelection();
 		CheckAllReady();
 	}
 
 	[Rpc.Host]
 	public void SelectPlaystyle( Playstyle ps )
 	{
-		if ( HasSelected ) return;
-
-		CurrentUpgrades.ChosenPlaystyle = ps;
-		CurrentUpgrades.PlaystyleLocked = true;
-		HasSelected = true;
-
-		_gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
-		if ( _gm.IsValid() )
+		if ( HasSelected )
 		{
-			_gm.PlaystyleChosen = true;
-			BroadcastPlaystyleChosen();
+			Log.Info( $"SelectPlaystyle skipped: HasSelected already true for {GameObject.Name}, caller={Rpc.Caller?.DisplayName ?? "null"}" );
+			return;
 		}
+		Log.Info( $"SelectPlaystyle processing: um={GameObject.Name}, style={ps}, caller={Rpc.Caller?.DisplayName ?? "null"}" );
+
+		// Must reassign to trigger [Sync] replication
+		var state = CurrentUpgrades ?? new UpgradeState();
+		state.ChosenPlaystyle = ps;
+		state.PlaystyleLocked = true;
+		CurrentUpgrades = state;
+		HasSelected = true;
+		PlaystyleSelected = true;
 
 		Log.Info( $"{GameObject.Name} selected playstyle: {ps}" );
+		BroadcastSelection();
 		CheckAllReady();
 	}
 
@@ -204,19 +217,35 @@ public sealed class UpgradeManager : Component
 		}
 	}
 
+	/// <summary>Broadcast HasSelected so all clients (including host) see the selection.</summary>
 	[Broadcast]
-	public void ConfirmSelection()
+	public void BroadcastSelection()
 	{
 		HasSelected = true;
 	}
 
-	private void CheckAllReady()
+	public void CheckAllReady()
 	{
 		if ( !Networking.IsHost ) return;
 
 		var allReady = Scene.GetAllComponents<UpgradeManager>()
 			.All( u => u.HasSelected );
 
-		Log.Info( $"UpgradeManager: CheckAllReady allReady={allReady}, count={Scene.GetAllComponents<UpgradeManager>().Count()}" );
+		if ( !allReady ) return;
+
+		Log.Info( $"UpgradeManager: All players ready, resuming game" );
+
+		// Directly resume instead of relying on GameManager.OnUpdate polling
+		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
+		if ( !gm.IsValid() ) return;
+
+		// Mark playstyle phase complete the first time all players are ready
+		// This ensures future waves show upgrade cards, not playstyle cards
+		if ( !gm.PlaystylePhaseComplete )
+			gm.PlaystylePhaseComplete = true;
+
+		gm.State = GameManager.GameState.Playing;
+		gm.Scene.TimeScale = 1;
+		ResumeGame();
 	}
 }

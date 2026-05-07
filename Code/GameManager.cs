@@ -16,7 +16,8 @@ public sealed class GameManager : Component
 	[Sync] public GameState State { get; set; } = GameState.Lobby;
 	[Sync] public int CurrentWave { get; set; } = 0;
 	[Sync] public int TotalScore { get; set; } = 0;
-	[Sync] public bool PlaystyleChosen { get; set; } = false;
+	[Sync] public bool PlaystylePhaseComplete { get; set; } = false;
+	[Sync] public float ForwardSpeed { get; set; } = 200f; // Host-authoritative forward speed
 
 	[Sync] public int ReadyCount { get; set; } = 0;
 	[Sync] public string ReadyStateIds { get; set; } = "";
@@ -69,6 +70,14 @@ public sealed class GameManager : Component
 		RunDamageDealt = 0;
 		_lastProgressionSave = 0;
 
+		// Set host-authoritative forward speed (includes OfficeCoffee upgrade from host's progression)
+		if ( Networking.IsHost && Progression != null )
+		{
+			float speedMult = 1f + Progression.Shop.OfficeCoffee * 0.05f;
+			ForwardSpeed = 200f * speedMult;
+			Log.Info( $"Host forward speed: {ForwardSpeed} (OfficeCoffee={Progression.Shop.OfficeCoffee}, mult={speedMult})" );
+		}
+
 		// Start in Lobby state — show menu camera, hide game camera
 		State = GameState.Lobby;
 		ShowMenuCamera();
@@ -76,13 +85,34 @@ public sealed class GameManager : Component
 
 	/// <summary>
 	/// Called from MainMenuPanel when START GAME is clicked.
-	/// Broadcast to all clients — switches everyone to game camera.
-	/// UI button is only shown for host; the Broadcast ensures clients also transition.
+	/// Host-only RPC — clients are notified via BroadcastClientStartGame().
 	/// </summary>
-	[Broadcast]
+	[Rpc.Host]
 	public void StartGame()
 	{
-		Log.Info( "StartGame: switching to game camera" );
+		if ( !Networking.IsHost ) return;
+		Log.Info( "StartGame: host starting game" );
+
+		// Align all players to the same starting Y position
+		var players = Scene.GetAllComponents<ArrowPlayer>();
+		float baseY = 0f;
+		int idx = 0;
+		foreach ( var p in players )
+		{
+			var pos = p.WorldPosition;
+			pos = pos.WithY( baseY + idx * 0.1f );
+			p.WorldPosition = pos;
+			idx++;
+		}
+
+		// Tell all clients to switch to game camera and set Playing state
+		BroadcastGameStart();
+	}
+
+	[Broadcast]
+	public void BroadcastGameStart()
+	{
+		Log.Info( "BroadcastGameStart: switching to game camera" );
 		State = GameState.Playing;
 		_runTimer = 0;
 		ShowGameCamera();
@@ -135,6 +165,7 @@ public sealed class GameManager : Component
 
 		// Reset game state
 		CurrentWave = 0;
+		PlaystylePhaseComplete = false;
 		TotalScore = 0;
 		RunPaperclipsEarned = 0;
 		RunEnemiesKilled = 0;
@@ -209,6 +240,10 @@ public sealed class GameManager : Component
 			{
 				State = GameState.Playing;
 				Scene.TimeScale = 1;
+
+				if ( !PlaystylePhaseComplete )
+					PlaystylePhaseComplete = true;
+
 				// Broadcast to all clients via reliably-networked UpgradeManager
 				var firstUm = Scene.GetAllComponents<UpgradeManager>().FirstOrDefault();
 				if ( firstUm.IsValid() )
@@ -273,7 +308,7 @@ public sealed class GameManager : Component
 		// Broadcast state to all clients (each client's UpgradePanel calls OfferUpgrades locally)
 		var firstUm = Scene.GetAllComponents<UpgradeManager>().FirstOrDefault();
 		if ( firstUm.IsValid() )
-			firstUm.BroadcastUpgradePhase( wave, PlaystyleChosen );
+			firstUm.BroadcastUpgradePhase( wave );
 	}
 
 	public void OnAllPlayersReady()
@@ -288,4 +323,5 @@ public sealed class GameManager : Component
 		if ( !Networking.IsHost ) return;
 		TotalScore += points;
 	}
+
 }

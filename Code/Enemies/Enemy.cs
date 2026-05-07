@@ -54,12 +54,17 @@ public class Enemy : Component
 	}
 
 	/// <summary>
-	/// Apply damage to this enemy.
+	/// Apply damage to this enemy. Server-authoritative — clients send [Rpc.Host] requests.
+	/// The host validates damage values, applies them, and [Sync] replicates to all clients.
 	/// </summary>
-	[Rpc.Broadcast]
+	[Rpc.Host]
 	public void TakeDamage( float damage, Guid attackerId )
 	{
 		if ( !IsAlive ) return;
+		if ( !Networking.IsHost ) return;
+
+		// Clamp damage to prevent abuse
+		damage = Math.Clamp( damage, 0, 1000f );
 
 		CurrentHealth -= damage;
 
